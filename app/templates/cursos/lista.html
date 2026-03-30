@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Header del Catálogo -->
+<div class="catalog-header mb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h1 class="fw-bold mb-1">Catálogo de Cursos</h1>
+            <p class="text-muted mb-0">{{ cursos|length }} curso{{ 's' if cursos|length != 1 }} disponibles{% if busqueda %} · filtrados{% endif %}</p>
+        </div>
+        {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
+        <a href="{{ url_for('cursos.crear_curso') }}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Crear Nuevo Curso
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Búsqueda y unión por código -->
+<div class="row g-3 mb-4">
+    <div class="col-md-7">
+        <form class="d-flex gap-2" method="get" action="{{ url_for('cursos.lista_cursos') }}" role="search">
+            <input type="search" name="q" class="form-control form-control-lg shadow-sm"
+                placeholder="Buscar por nombre, descripción o código (ej. MTC-…)"
+                value="{{ busqueda or '' }}" autocomplete="off">
+            <button type="submit" class="btn btn-outline-primary px-4">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+        {% if busqueda %}
+        <a href="{{ url_for('cursos.lista_cursos') }}" class="small text-muted mt-1 d-inline-block">Quitar búsqueda</a>
+        {% endif %}
+    </div>
+    {% if current_user.rol == 'estudiante' %}
+    <div class="col-md-5">
+        <form class="d-flex gap-2 align-items-stretch" method="post" action="{{ url_for('cursos.unirse_por_codigo') }}">
+            <input type="text" name="codigo" class="form-control form-control-lg shadow-sm text-uppercase"
+                placeholder="Unirse con código del curso" maxlength="16" autocomplete="off">
+            <button type="submit" class="btn btn-success px-3 text-nowrap">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Unirme
+            </button>
+        </form>
+        <small class="text-muted d-block mt-1">El docente comparte el código; también puedes buscarlo arriba.</small>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Filtros por Nivel -->
+<div class="d-flex gap-2 flex-wrap mb-4" id="filtros">
+    <button class="btn btn-sm btn-primary filtro-btn active" data-nivel="todos">Todos</button>
+    <button class="btn btn-sm btn-outline-secondary filtro-btn" data-nivel="basico">
+        <span class="badge-nivel-dot bg-success me-1"></span> Básico
+    </button>
+    <button class="btn btn-sm btn-outline-secondary filtro-btn" data-nivel="intermedio">
+        <span class="badge-nivel-dot bg-primary me-1"></span> Intermedio
+    </button>
+    <button class="btn btn-sm btn-outline-secondary filtro-btn" data-nivel="avanzado">
+        <span class="badge-nivel-dot" style="background:#8B5CF6;" me-1></span> Avanzado
+    </button>
+</div>
+
+<!-- Grid de Cursos -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="cursos-grid">
+    {% for curso in cursos %}
+    {% set inscrito = curso.id in mis_inscripciones %}
+    <div class="col curso-card-col" data-nivel="{{ curso.nivel }}">
+        <div class="card h-100 border-0 shadow-sm curso-card">
+            <!-- Cabecera con gradiente por nivel -->
+            <div class="curso-card-header 
+                {% if curso.nivel == 'basico' %}nivel-basico
+                {% elif curso.nivel == 'intermedio' %}nivel-intermedio
+                {% else %}nivel-avanzado{% endif %}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="badge bg-white bg-opacity-25 text-white fw-semibold rounded-pill">
+                        {{ curso.nivel | capitalize }}
+                    </span>
+                    {% if inscrito %}
+                    <span class="badge bg-success rounded-pill">
+                        <i class="bi bi-check2"></i> Inscrito
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="text-center py-3">
+                    <i class="bi bi-mortarboard-fill text-white" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                </div>
+            </div>
+
+            <div class="card-body px-4 py-3">
+                <h5 class="card-title fw-bold mb-1">{{ curso.titulo }}</h5>
+                <p class="card-text text-muted small mb-3">
+                    {{ curso.descripcion[:110] if curso.descripcion else 'Sin descripción.' }}{% if curso.descripcion
+                    and curso.descripcion|length > 110 %}...{% endif %}
+                </p>
+                <div class="d-flex align-items-center gap-3 text-muted small">
+                    <span><i class="bi bi-book me-1"></i>{{ curso.lecciones | length }} lección{{ 'es' if
+                        curso.lecciones|length != 1 }}</span>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-top-0 px-4 pb-4 pt-0">
+                <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}"
+                    class="btn btn-primary w-100 {% if not inscrito %}btn-outline-primary bg-transparent text-primary{% endif %}">
+                    {% if inscrito %}
+                    <i class="bi bi-play-fill me-1"></i> Continuar
+                    {% else %}
+                    Ver Detalles
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-search display-4 text-muted mb-3 d-block"></i>
+        <p class="text-muted fs-5">No hay cursos disponibles aún.</p>
+        {% if current_user.rol == 'docente' %}
+        <a href="{{ url_for('cursos.crear_curso') }}" class="btn btn-primary">¡Crea el primero!</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .curso-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-radius: 14px !important;
+        overflow: hidden;
+    }
+
+    .curso-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .curso-card-header {
+        padding: 1.25rem 1.25rem 0.75rem;
+    }
+
+    .nivel-basico {
+        background: linear-gradient(135deg, #10B981, #059669);
+    }
+
+    .nivel-intermedio {
+        background: linear-gradient(135deg, #3B82F6, #2563EB);
+    }
+
+    .nivel-avanzado {
+        background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+    }
+
+    .badge-nivel-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        vertical-align: middle;
+    }
+
+    .filtro-btn {
+        border-radius: 50px !important;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+</style>
+
+<script>
+    document.querySelectorAll('.filtro-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.filtro-btn').forEach(b => {
+                b.classList.remove('active', 'btn-primary');
+                b.classList.add('btn-outline-secondary');
+            });
+            this.classList.add('active', 'btn-primary');
+            this.classList.remove('btn-outline-secondary');
+
+            const nivel = this.dataset.nivel;
+            document.querySelectorAll('.curso-card-col').forEach(card => {
+                if (nivel === 'todos' || card.dataset.nivel === nivel) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

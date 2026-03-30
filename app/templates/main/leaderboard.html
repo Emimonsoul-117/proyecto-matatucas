@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Header -->
+    <div class="row mb-5 align-items-center">
+        <div class="col">
+            <h1 class="fw-bold mb-1"><i class="bi bi-trophy-fill text-warning me-2"></i>Tabla de Clasificación</h1>
+            <p class="text-muted mb-0">Los estudiantes con más puntos de experiencia</p>
+        </div>
+        {% if mi_posicion %}
+        <div class="col-auto">
+            <div class="card border-0 bg-primary-subtle px-4 py-2 text-center">
+                <small class="text-muted fw-semibold text-uppercase">Tu Posición</small>
+                <span class="display-6 fw-bold text-primary-brand">#{{ mi_posicion }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Podio Top 3 -->
+    {% if top_estudiantes|length >= 3 %}
+    <div class="row justify-content-center g-3 mb-5 align-items-end">
+        <!-- 2do lugar -->
+        <div class="col-4 col-md-3 text-center">
+            <div class="card border-0 shadow podio-card podio-plata pt-4">
+                <div class="card-body">
+                    <div class="podio-avatar podio-plata-bg mx-auto mb-2">
+                        <i class="bi bi-person-fill fs-3 text-white"></i>
+                    </div>
+                    <div class="podio-medal">🥈</div>
+                    <h6 class="fw-bold mb-1 text-truncate">{{ top_estudiantes[1][1].nombre }}</h6>
+                    <span class="text-muted small">{{ top_estudiantes[1][0].puntos_totales }} XP</span>
+                </div>
+            </div>
+        </div>
+        <!-- 1er lugar -->
+        <div class="col-4 col-md-3 text-center">
+            <div class="card border-0 shadow-lg podio-card podio-oro pt-4 position-relative">
+                <div class="win-crown">👑</div>
+                <div class="card-body">
+                    <div class="podio-avatar podio-oro-bg mx-auto mb-2">
+                        <i class="bi bi-person-fill fs-3 text-white"></i>
+                    </div>
+                    <div class="podio-medal">🥇</div>
+                    <h6 class="fw-bold mb-1 text-truncate">{{ top_estudiantes[0][1].nombre }}</h6>
+                    <span class="text-muted small">{{ top_estudiantes[0][0].puntos_totales }} XP</span>
+                </div>
+            </div>
+        </div>
+        <!-- 3er lugar -->
+        <div class="col-4 col-md-3 text-center">
+            <div class="card border-0 shadow podio-card podio-bronce pt-4">
+                <div class="card-body">
+                    <div class="podio-avatar podio-bronce-bg mx-auto mb-2">
+                        <i class="bi bi-person-fill fs-3 text-white"></i>
+                    </div>
+                    <div class="podio-medal">🥉</div>
+                    <h6 class="fw-bold mb-1 text-truncate">{{ top_estudiantes[2][1].nombre }}</h6>
+                    <span class="text-muted small">{{ top_estudiantes[2][0].puntos_totales }} XP</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla Completa -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold">Ranking Completo</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width:60px">#</th>
+                        <th>Estudiante</th>
+                        <th class="text-center">Puntos XP</th>
+                        <th class="text-center">Racha</th>
+                        <th class="text-center pe-4">Nivel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estudiante, usuario in top_estudiantes %}
+                    {% set pos = loop.index %}
+                    {% set es_yo = current_user.is_authenticated and usuario.id == current_user.id %}
+                    <tr class="{{ 'table-primary fw-bold' if es_yo else '' }}">
+                        <td class="ps-4">
+                            {% if pos == 1 %}<span class="fs-5">🥇</span>
+                            {% elif pos == 2 %}<span class="fs-5">🥈</span>
+                            {% elif pos == 3 %}<span class="fs-5">🥉</span>
+                            {% else %}<span class="text-muted fw-semibold">{{ pos }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://ui-avatars.com/api/?name={{ usuario.nombre }}&background={{ '4F46E5' if es_yo else 'E2E8F0' }}&color={{ 'fff' if es_yo else '64748B' }}&size=36"
+                                    class="rounded-circle" width="36" height="36" alt="">
+                                <div>
+                                    <div class="fw-semibold">{{ usuario.nombre }}</div>
+                                    {% if es_yo %}
+                                    <small class="text-primary-brand">← Tú</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary-subtle text-primary-brand fw-bold fs-6 px-3">
+                                {{ estudiante.puntos_totales }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="text-warning fw-semibold">
+                                🔥 {{ estudiante.racha_dias }} día{{ 's' if estudiante.racha_dias != 1 }}
+                            </span>
+                        </td>
+                        <td class="text-center pe-4">
+                            <span class="badge-level">Nv. {{ (estudiante.puntos_totales // 1000) + 1 }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-5">
+                            Aún no hay estudiantes en el ranking.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .podio-card {
+        border-radius: 16px !important;
+    }
+
+    .podio-oro {
+        border-top: 4px solid #F59E0B !important;
+    }
+
+    .podio-plata {
+        border-top: 4px solid #94A3B8 !important;
+    }
+
+    .podio-bronce {
+        border-top: 4px solid #B45309 !important;
+    }
+
+    .podio-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .podio-oro-bg {
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+    }
+
+    .podio-plata-bg {
+        background: linear-gradient(135deg, #94A3B8, #64748B);
+    }
+
+    .podio-bronce-bg {
+        background: linear-gradient(135deg, #CD7F32, #92400E);
+    }
+
+    .podio-medal {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .win-crown {
+        font-size: 2rem;
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+</style>
+{% endblock %}

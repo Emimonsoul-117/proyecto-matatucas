@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Ejercicios: {{ leccion.titulo }}</h2>
+            <span class="badge bg-secondary">Total: {{ ejercicios|length }}</span>
+        </div>
+
+        {% if puntaje is not none %}
+        <div class="alert alert-{{ 'success' if puntaje >= 70 else 'warning' }} text-center mb-4">
+            <h3>Tu Calificación: {{ puntaje }} / 100</h3>
+            <p>{{ '¡Excelente trabajo!' if puntaje >= 70 else 'Repasa la lección e inténtalo de nuevo.' }}</p>
+            <a href="{{ url_for('cursos.hacer_ejercicios', id_leccion=leccion.id) }}"
+                class="btn btn-outline-dark mt-2">Intentar de nuevo</a>
+            <a href="{{ url_for('cursos.ver_leccion', id=leccion.id) }}" class="btn btn-dark mt-2">Volver a Lección</a>
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% for ejercicio in ejercicios %}
+            <div
+                class="card mb-4 shadow-sm {{ 'border-success' if resultados and resultados[ejercicio.id]['correcta'] else ('border-danger' if resultados else '') }}">
+                <div class="card-body">
+                    <h5 class="card-title">Pregunta {{ loop.index }}</h5>
+                    <p class="card-text fs-5">{{ ejercicio.enunciado | safe }}</p>
+
+                    {% if ejercicio.tipo == 'opcion_multiple' %}
+                    <div class="list-group">
+                        {% for key, val in ejercicio.opciones.items() %}
+                        {% if val %}
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="radio" name="respuesta_{{ ejercicio.id }}"
+                                value="{{ key }}" {{ 'checked' if resultados and
+                                resultados[ejercicio.id]['respuesta']==key else '' }}>
+                            <strong>{{ key|upper }})</strong> {{ val }}
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% elif ejercicio.tipo == 'verdadero_falso' %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="respuesta_{{ ejercicio.id }}"
+                            value="Verdadero" id="v_{{ ejercicio.id }}" {{ 'checked' if resultados and
+                            resultados[ejercicio.id]['respuesta']=='Verdadero' else '' }}>
+                        <label class="form-check-label" for="v_{{ ejercicio.id }}">Verdadero</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="respuesta_{{ ejercicio.id }}" value="Falso"
+                            id="f_{{ ejercicio.id }}" {{ 'checked' if resultados and
+                            resultados[ejercicio.id]['respuesta']=='Falso' else '' }}>
+                        <label class="form-check-label" for="f_{{ ejercicio.id }}">Falso</label>
+                    </div>
+                    {% else %}
+                    <input type="text" class="form-control" name="respuesta_{{ ejercicio.id }}"
+                        placeholder="Tu respuesta"
+                        value="{{ resultados[ejercicio.id]['respuesta'] if resultados else '' }}">
+                    {% endif %}
+
+                    {% if resultados %}
+                    <div class="mt-3">
+                        {% if resultados[ejercicio.id]['correcta'] %}
+                        <span class="text-success fw-bold"><i class="bi bi-check-lg"></i> Correcto</span>
+                        <!-- Botón para ver procedimiento incluso cuando es correcto -->
+                        <button type="button" class="btn btn-sm btn-outline-success ms-2"
+                            onclick="verProcedimiento({{ ejercicio.id }}, '{{ ejercicio.enunciado | replace("'", "\\'") | replace("
+                            \n", " " ) }}', '{{ ejercicio.respuesta_correcta | replace("'", " \\'")
+                            }}', '{{ resultados[ejercicio.id][' respuesta'] | replace("'", "\\'" ) if
+                            resultados[ejercicio.id]['respuesta'] else '' }}')">
+                            <i class="bi bi-book"></i> Ver procedimiento
+                        </button>
+                        {% else %}
+                        <span class="text-danger fw-bold"><i class="bi bi-x-lg"></i> Incorrecto</span>
+                        <p class="text-muted mt-1 small">Respuesta correcta: {{ ejercicio.respuesta_correcta }}</p>
+                        <!-- Botón para ver procedimiento detallado con IA -->
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-1"
+                            onclick="verProcedimiento({{ ejercicio.id }}, '{{ ejercicio.enunciado | replace("'", "\\'") | replace("
+                            \n", " " ) }}', '{{ ejercicio.respuesta_correcta | replace("'", " \\'")
+                            }}', '{{ resultados[ejercicio.id][' respuesta'] | replace("'", "\\'" ) if
+                            resultados[ejercicio.id]['respuesta'] else '' }}')">
+                            <i class="bi bi-lightbulb"></i> Ver procedimiento paso a paso
+                        </button>
+                        {% endif %}
+
+                        <!-- Contenedor para la explicación generada por IA -->
+                        <div id="explicacion_{{ ejercicio.id }}" class="mt-3" style="display:none;"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if puntaje is none %}
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">Enviar Respuestas</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+    async function verProcedimiento(ejercicioId, enunciado, respuestaCorrecta, respuestaUsuario) {
+        const contenedor = document.getElementById('explicacion_' + ejercicioId);
+
+        // Si ya se mostró, toggle visibilidad
+        if (contenedor.dataset.loaded === 'true') {
+            contenedor.style.display = contenedor.style.display === 'none' ? 'block' : 'none';
+            return;
+        }
+
+        // Mostrar loading
+        contenedor.style.display = 'block';
+        contenedor.innerHTML = `
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span class="ms-2">Generando explicación paso a paso con IA...</span>
+                </div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch("{{ url_for('cursos.api_explicar_ejercicio') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    enunciado: enunciado,
+                    respuesta_correcta: respuestaCorrecta,
+                    respuesta_usuario: respuestaUsuario
+                })
+            });
+
+            const data = await response.json();
+
+            let pasosHtml = '';
+            if (data.pasos && data.pasos.length > 0) {
+                pasosHtml = '<ol class="mb-3">';
+                data.pasos.forEach(paso => {
+                    pasosHtml += `<li class="mb-2">${paso}</li>`;
+                });
+                pasosHtml += '</ol>';
+            }
+
+            contenedor.innerHTML = `
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+                        <strong class="text-primary">
+                            <i class="bi bi-lightbulb-fill"></i> Procedimiento de solución
+                        </strong>
+                        <button type="button" class="btn-close" onclick="document.getElementById('explicacion_${ejercicioId}').style.display='none'"></button>
+                    </div>
+                    <div class="card-body">
+                        ${data.explicacion_breve ? `<p class="text-muted mb-3"><em>${data.explicacion_breve}</em></p>` : ''}
+                        <h6 class="text-primary mb-2"><i class="bi bi-list-ol"></i> Pasos:</h6>
+                        ${pasosHtml}
+                        ${data.consejo ? `
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="bi bi-emoji-smile"></i> <strong>Consejo:</strong> ${data.consejo}
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+
+            contenedor.dataset.loaded = 'true';
+
+            // Renderizar ecuaciones en la explicación
+            if (typeof renderizarMatematicas === 'function') {
+                renderizarMatematicas(contenedor);
+            }
+
+        } catch (error) {
+            contenedor.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> No se pudo generar la explicación. Inténtalo de nuevo.
+                </div>
+            `;
+            console.error(error);
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,709 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Quill.js CSS (para mostrar contenido formateado) -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    .leccion-wrapper {
+        background: #f8fafc;
+        min-height: 80vh;
+    }
+
+    /* Header */
+    .leccion-header {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: #fff;
+        padding: 2.5rem 0 4rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .leccion-header::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: #f8fafc;
+        clip-path: ellipse(55% 100% at 50% 100%);
+    }
+
+    .leccion-header .breadcrumb-item a {
+        color: rgba(255, 255, 255, 0.75);
+    }
+
+    .leccion-header .breadcrumb-item.active {
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .leccion-header .breadcrumb-separator {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Secciones */
+    .seccion-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        border-left: 4px solid transparent;
+    }
+
+    .seccion-card.tipo-teoria {
+        border-left-color: #4f46e5;
+    }
+
+    .seccion-card.tipo-video {
+        border-left-color: #e11d48;
+    }
+
+    .seccion-card.tipo-ejercicio {
+        border-left-color: #16a34a;
+    }
+
+    .seccion-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .tipo-teoria .seccion-label {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .tipo-video .seccion-label {
+        background: #fff1f2;
+        color: #e11d48;
+    }
+
+    .tipo-ejercicio .seccion-label {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+
+    .seccion-content {
+        padding: 1.8rem 2rem;
+    }
+
+    /* Quill display */
+    .ql-editor {
+        padding: 0;
+        border: none !important;
+        font-size: 1.05rem;
+        line-height: 1.85;
+    }
+
+    .ql-snow .ql-toolbar {
+        display: none;
+    }
+
+    .ql-snow.ql-container {
+        border: none !important;
+    }
+
+    .leccion-html {
+        font-size: 1.05rem;
+        line-height: 1.85;
+        color: #1e293b;
+    }
+
+    .leccion-html h1,
+    .leccion-html h2,
+    .leccion-html h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+    }
+
+    .leccion-html ul,
+    .leccion-html ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .leccion-html blockquote {
+        border-left: 4px solid #4f46e5;
+        padding: 0.5rem 1rem;
+        background: #eef2ff;
+        border-radius: 4px;
+        color: #4338ca;
+    }
+
+    .leccion-html code {
+        background: #1e293b;
+        color: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    .leccion-html pre {
+        background: #1e293b;
+        color: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    .leccion-html img {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Video */
+    .yt-container {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        background: #000;
+    }
+
+    .yt-container iframe {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16/9;
+        border: none;
+    }
+
+    .video-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+    }
+
+    .video-status.watching {
+        background: #fef9c3;
+        color: #713f12;
+    }
+
+    .video-status.done {
+        background: #dcfce7;
+        color: #14532d;
+    }
+
+    /* Ejercicio inline */
+    .quiz-card {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .quiz-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 8px;
+        background: #fff;
+        font-size: 0.95rem;
+    }
+
+    .quiz-option:hover {
+        border-color: #4f46e5;
+        background: #eef2ff;
+    }
+
+    .quiz-option.seleccionada {
+        border-color: #4f46e5;
+        background: #eef2ff;
+    }
+
+    .quiz-option.correcta {
+        border-color: #16a34a;
+        background: #dcfce7;
+        color: #14532d;
+    }
+
+    .quiz-option.incorrecta {
+        border-color: #dc2626;
+        background: #fee2e2;
+        color: #7f1d1d;
+    }
+
+    .quiz-letra {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        background: #e2e8f0;
+        color: #64748b;
+        flex-shrink: 0;
+    }
+
+    .quiz-option.seleccionada .quiz-letra {
+        background: #4f46e5;
+        color: #fff;
+    }
+
+    .quiz-option.correcta .quiz-letra {
+        background: #16a34a;
+        color: #fff;
+    }
+
+    .quiz-option.incorrecta .quiz-letra {
+        background: #dc2626;
+        color: #fff;
+    }
+
+    .quiz-result {
+        border-radius: 10px;
+        padding: 12px 18px;
+        margin-top: 12px;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    /* Sidebar */
+    .sidebar-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Completada banner */
+    .banner-completada {
+        background: linear-gradient(90deg, #16a34a, #15803d);
+        color: #fff;
+        border-radius: 12px;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .banner-esperando {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+        color: #fff;
+        border-radius: 12px;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Toast de completado */
+    .toast-completada {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 9999;
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        color: #fff;
+        border-radius: 16px;
+        padding: 18px 24px;
+        box-shadow: 0 8px 32px rgba(22, 163, 74, 0.35);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transform: translateY(120px);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        min-width: 280px;
+    }
+
+    .toast-completada.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .toast-icon {
+        font-size: 2rem;
+    }
+</style>
+
+<div class="leccion-wrapper">
+
+    <!-- Header -->
+    <div class="leccion-header">
+        <div class="container">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('cursos.lista_cursos') }}">Cursos</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('cursos.ver_curso', id=leccion.id_curso) }}">Volver
+                            al Curso</a></li>
+                    <li class="breadcrumb-item active">{{ leccion.titulo }}</li>
+                </ol>
+            </nav>
+            <h1 class="display-5 fw-bold mb-1">{{ leccion.orden }}. {{ leccion.titulo }}</h1>
+            <p class="mb-0 opacity-75"><i class="bi bi-book me-2"></i>Lección {{ leccion.orden }}</p>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="container py-4" style="max-width: 1100px;">
+        <div class="row g-4">
+
+            <!-- Secciones principales -->
+            <div class="col-lg-8">
+
+                {% if current_user.rol == 'estudiante' %}
+                {% if completada %}
+                <div class="banner-completada">
+                    <i class="bi bi-check-circle-fill fs-4"></i>
+                    <span>¡Lección completada! Buen trabajo 🎉</span>
+                </div>
+                {% else %}
+                <div class="banner-esperando" id="bannerEsperando">
+                    <i class="bi bi-clock-history fs-4"></i>
+                    <span id="textoEsperando">
+                        {% set tiene_video = secciones | selectattr('tipo', 'equalto', 'video') | list | length > 0 %}
+                        {% if tiene_video %}Termina de ver el video para completar la lección{% else %}Cargando...{%
+                        endif %}
+                    </span>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                {% for seccion in secciones %}
+
+                {# === SECCIÓN TEORÍA === #}
+                {% if seccion.tipo == 'teoria' %}
+                <div class="seccion-card tipo-teoria">
+                    <div class="seccion-label">
+                        <i class="bi bi-file-text"></i> Contenido Teórico
+                    </div>
+                    <div class="seccion-content">
+                        <div class="leccion-html">{{ seccion.contenido | safe }}</div>
+                    </div>
+                </div>
+
+                {# === SECCIÓN VIDEO === #}
+                {% elif seccion.tipo == 'video' %}
+                {% set loop_idx = loop.index %}
+                <div class="seccion-card tipo-video" id="seccion-video-{{ loop_idx }}">
+                    <div class="seccion-label">
+                        <i class="bi bi-play-circle-fill"></i> {{ seccion.titulo or 'Video de la Lección' }}
+                    </div>
+                    <div class="seccion-content">
+                        {% set yt_url = seccion.url %}
+                        {% set video_id = '' %}
+                        {# Extraer ID de YouTube server-side o pasar la URL al JS #}
+                        <div class="yt-container">
+                            <div id="yt-player-{{ loop_idx }}"></div>
+                        </div>
+                        <div class="video-status watching" id="video-status-{{ loop_idx }}">
+                            <i class="bi bi-eye"></i>
+                            <span>Mirando el video... se completará automáticamente al terminar</span>
+                        </div>
+                        <script>
+                            window._ytVideos = window._ytVideos || [];
+                            window._ytVideos.push({ idx: {{ loop_idx }}, url: "{{ yt_url }}", leccionId: {{ leccion.id }} });
+                        </script>
+                    </div>
+                </div>
+
+                {# === SECCIÓN EJERCICIO === #}
+                {% elif seccion.tipo == 'ejercicio' %}
+                {% set loop_idx = loop.index %}
+                <div class="seccion-card tipo-ejercicio">
+                    <div class="seccion-label">
+                        <i class="bi bi-pencil-square"></i> Ejercicio
+                    </div>
+                    <div class="seccion-content">
+                        <div class="quiz-card" id="quiz-{{ loop_idx }}">
+                            <p class="fw-semibold mb-3" style="font-size:1.05rem;">{{ seccion.pregunta }}</p>
+
+                            {% if seccion.tipo_q == 'opcion_multiple' and seccion.opciones %}
+                            {% for letra, texto in seccion.opciones.items() %}
+                            {% if texto %}
+                            <div class="quiz-option"
+                                onclick="seleccionarOpcion({{ loop_idx }}, this, '{{ letra }}', '{{ seccion.respuesta }}')"
+                                data-letra="{{ letra }}">
+                                <span class="quiz-letra">{{ letra | upper }}</span>
+                                <span>{{ texto }}</span>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% elif seccion.tipo_q == 'verdadero_falso' %}
+                            <div class="quiz-option"
+                                onclick="seleccionarOpcion({{ loop_idx }}, this, 'Verdadero', '{{ seccion.respuesta }}')"
+                                data-letra="V">
+                                <span class="quiz-letra">V</span><span>Verdadero</span>
+                            </div>
+                            <div class="quiz-option"
+                                onclick="seleccionarOpcion({{ loop_idx }}, this, 'Falso', '{{ seccion.respuesta }}')"
+                                data-letra="F">
+                                <span class="quiz-letra">F</span><span>Falso</span>
+                            </div>
+
+                            {% elif seccion.tipo_q == 'numerico' %}
+                            <div class="input-group mt-2">
+                                <input type="number" step="any" class="form-control" id="num-input-{{ loop_idx }}"
+                                    placeholder="Tu respuesta numérica">
+                                <button class="btn btn-primary"
+                                    onclick="verificarNumerico({{ loop_idx }}, '{{ seccion.respuesta }}')">
+                                    Verificar
+                                </button>
+                            </div>
+                            {% endif %}
+
+                            <div id="quiz-result-{{ loop_idx }}" class="quiz-result" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% endfor %}
+
+                <!-- Navegación -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('cursos.ver_curso', id=leccion.id_curso) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver al Curso
+                    </a>
+                    {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
+                    <a href="{{ url_for('cursos.nueva_leccion', id_curso=leccion.id_curso) }}"
+                        class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> Agregar Otra Lección
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="sidebar-card">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Sobre esta Lección</h6>
+                    <div class="d-flex flex-column gap-2">
+                        {% set tipos_presentes = secciones | map(attribute='tipo') | list %}
+                        {% if 'teoria' in tipos_presentes %}
+                        <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#eef2ff;">
+                            <span>📝</span><small class="fw-semibold text-primary">Incluye Teoría</small>
+                        </div>
+                        {% endif %}
+                        {% if 'video' in tipos_presentes %}
+                        <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#fff1f2;">
+                            <span>🎬</span><small class="fw-semibold text-danger">Incluye Video</small>
+                        </div>
+                        {% endif %}
+                        {% if 'ejercicio' in tipos_presentes %}
+                        <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#f0fdf4;">
+                            <span>✏️</span><small class="fw-semibold text-success">Incluye Ejercicios</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if current_user.rol == 'estudiante' %}
+                <div class="sidebar-card">
+                    <h6 class="fw-bold mb-2"><i class="bi bi-trophy me-2 text-warning"></i>Progreso</h6>
+                    {% if completada %}
+                    <p class="text-success fw-semibold mb-0"><i class="bi bi-check-circle-fill me-1"></i>Completada</p>
+                    {% else %}
+                    <p class="text-muted small mb-0">Se marcará como completada automáticamente.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Toast de Completado -->
+<div class="toast-completada" id="toastCompletada">
+    <div class="toast-icon">🎉</div>
+    <div>
+        <div class="fw-bold" style="font-size:1rem;">¡Lección Completada!</div>
+        <div id="toastMsg" style="font-size:0.85rem; opacity:0.9;"></div>
+    </div>
+</div>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+    // ─────────────────────────────────────────
+    // Quiz Ejercicios Inline
+    // ─────────────────────────────────────────
+    function seleccionarOpcion(idx, el, letra, respuestaCorrecta) {
+        const quiz = document.getElementById('quiz-' + idx);
+        // Si ya se respondió, no hacer nada
+        if (quiz.dataset.respondido) return;
+        quiz.dataset.respondido = '1';
+
+        const opciones = quiz.querySelectorAll('.quiz-option');
+        opciones.forEach(op => op.style.pointerEvents = 'none');
+
+        const esCorrecto = letra.toLowerCase() === respuestaCorrecta.toLowerCase();
+        el.classList.add(esCorrecto ? 'correcta' : 'incorrecta');
+
+        // Marcar la correcta si falló
+        if (!esCorrecto) {
+            opciones.forEach(op => {
+                if (op.dataset.letra && op.dataset.letra.toLowerCase() === respuestaCorrecta.toLowerCase()) {
+                    op.classList.add('correcta');
+                }
+            });
+        }
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Correcto! Muy bien.';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Incorrecto. La respuesta correcta es: <strong>${respuestaCorrecta}</strong>`;
+        }
+        // Re-renderizar ecuaciones en el resultado
+        renderizarMatematicas(res);
+    }
+
+    function verificarNumerico(idx, respuestaCorrecta) {
+        const input = document.getElementById('num-input-' + idx);
+        const valUsuario = parseFloat(input.value);
+        const valCorrecto = parseFloat(respuestaCorrecta);
+        const esCorrecto = Math.abs(valUsuario - valCorrecto) < 0.001;
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Correcto!';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Incorrecto. La respuesta es: <strong>${respuestaCorrecta}</strong>`;
+        }
+        input.disabled = true;
+        // Re-renderizar ecuaciones en el resultado
+        renderizarMatematicas(res);
+    }
+
+    // ─────────────────────────────────────────
+    // Toast de lección completada
+    // ─────────────────────────────────────────
+    function mostrarToast(puntos, insignias) {
+        const toast = document.getElementById('toastCompletada');
+        const msg = document.getElementById('toastMsg');
+        let texto = '+' + puntos + ' XP ganados';
+        if (insignias && insignias.length > 0) texto += ' · 🏆 ' + insignias.join(', ');
+        msg.textContent = texto;
+        toast.classList.add('show');
+
+        // Ocultar banner de "esperando"
+        const banner = document.getElementById('bannerEsperando');
+        if (banner) {
+            banner.style.background = 'linear-gradient(90deg, #16a34a, #15803d)';
+            banner.querySelector('#textoEsperando').textContent = '¡Lección completada! Buen trabajo 🎉';
+            banner.querySelector('i').className = 'bi bi-check-circle-fill fs-4';
+        }
+
+        setTimeout(() => toast.classList.remove('show'), 5500);
+    }
+
+    // ─────────────────────────────────────────
+    // API auto-completar (llamada desde JS)
+    // ─────────────────────────────────────────
+    function autoCompletarLeccion(leccionId) {
+        fetch('/cursos/leccion/' + leccionId + '/auto-completar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '' },
+            credentials: 'same-origin'
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'completada') {
+                    mostrarToast(data.puntos, data.nuevas_insignias);
+                }
+            })
+            .catch(err => console.error('Error al completar lección:', err));
+    }
+
+    // ─────────────────────────────────────────
+    // YouTube IFrame API - Detectar fin de video
+    // ─────────────────────────────────────────
+    const ytVideos = window._ytVideos || [];
+    const ytPlayers = {};
+
+    function extraerVideoId(url) {
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+            if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+        } catch { }
+        return null;
+    }
+
+    function onYouTubeIframeAPIReady() {
+        ytVideos.forEach(info => {
+            const videoId = extraerVideoId(info.url);
+            if (!videoId) {
+                // URL inválida: mostrar mensaje
+                const cont = document.getElementById('yt-player-' + info.idx);
+                if (cont) cont.innerHTML = '<div class="p-4 text-muted"><i class="bi bi-exclamation-circle me-2"></i>URL de video no válida.</div>';
+                return;
+            }
+            ytPlayers[info.idx] = new YT.Player('yt-player-' + info.idx, {
+                videoId: videoId,
+                playerVars: { rel: 0, modestbranding: 1 },
+                events: {
+                    onStateChange: function (event) {
+                        onPlayerStateChange(event, info.idx, info.leccionId);
+                    }
+                }
+            });
+        });
+    }
+
+    function onPlayerStateChange(event, idx, leccionId) {
+        const statusEl = document.getElementById('video-status-' + idx);
+
+        if (event.data === YT.PlayerState.ENDED) {
+            // ¡Video terminado! → auto-completar
+            if (statusEl) {
+                statusEl.className = 'video-status done';
+                statusEl.innerHTML = '<i class="bi bi-check-circle-fill"></i><span>¡Video completado!</span>';
+            }
+            {% if current_user.rol == 'estudiante' and not completada %}
+            autoCompletarLeccion(leccionId);
+            {% endif %}
+        } else if (event.data === YT.PlayerState.PLAYING) {
+            if (statusEl) {
+                statusEl.className = 'video-status watching';
+                statusEl.innerHTML = '<i class="bi bi-eye"></i><span>Mirando el video... se completará automáticamente al terminar</span>';
+            }
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            if (statusEl) {
+                statusEl.className = 'video-status watching';
+                statusEl.innerHTML = '<i class="bi bi-pause-circle"></i><span>Video en pausa — continúa viendo para completar</span>';
+            }
+        }
+    }
+
+    // Si no hay videos, no se cargó onYouTubeIframeAPIReady nada
+    // Si ya estaba completada, deshabilitar auto-completado
+    {% if completada %}
+    // Ya completada, no hacer nada extra
+    {% endif %}
+</script>
+
+{% include "componentes/chatbot.html" %}
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Administración de Usuarios</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.crear_usuario') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+        </a>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('admin.lista_usuarios') }}"
+                class="btn btn-outline-secondary {{ 'active' if not rol_filtro }}">Todos</a>
+            <a href="{{ url_for('admin.lista_usuarios', rol='estudiante') }}"
+                class="btn btn-outline-secondary {{ 'active' if rol_filtro == 'estudiante' }}">Estudiantes</a>
+            <a href="{{ url_for('admin.lista_usuarios', rol='docente') }}"
+                class="btn btn-outline-secondary {{ 'active' if rol_filtro == 'docente' }}">Docentes</a>
+            <a href="{{ url_for('admin.lista_usuarios', rol='administrador') }}"
+                class="btn btn-outline-secondary {{ 'active' if rol_filtro == 'administrador' }}">Administradores</a>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <form class="d-flex" action="{{ url_for('admin.lista_usuarios') }}" method="GET">
+            <input class="form-control me-2" type="search" placeholder="Buscar por nombre o email" name="q"
+                value="{{ request.args.get('q', '') }}">
+            {% if rol_filtro %}<input type="hidden" name="rol" value="{{ rol_filtro }}">{% endif %}
+            <button class="btn btn-outline-success" type="submit">Buscar</button>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Control / Matrícula</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for usuario in usuarios %}
+            <tr>
+                <td>{{ usuario.id }}</td>
+                <td>
+                    <div class="fw-bold">{{ usuario.nombre }}</div>
+                    <small class="text-muted">Registrado: {{ usuario.fecha_registro.strftime('%d/%m/%Y') }}</small>
+                </td>
+                <td>{{ usuario.email }}</td>
+                <td>
+                    {% if usuario.rol == 'administrador' %}
+                    <span class="badge bg-danger">Admin</span>
+                    {% elif usuario.rol == 'docente' %}
+                    <span class="badge bg-info text-dark">Docente</span>
+                    {% else %}
+                    <span class="badge bg-success">Estudiante</span>
+                    {% endif %}
+                </td>
+                <td>{{ usuario.numero_control or '-' }}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('admin.editar_usuario', id=usuario.id) }}"
+                            class="btn btn-sm btn-outline-primary" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <!-- Botón para modal de eliminar -->
+                        {% if usuario.id != current_user.id %}
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                            data-bs-target="#deleteModal{{ usuario.id }}" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- Modal Eliminar -->
+                    <div class="modal fade" id="deleteModal{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    ¿Estás seguro de que deseas eliminar al usuario <strong>{{ usuario.nombre
+                                        }}</strong>?
+                                    <p class="text-danger small mt-2">Esta acción no se puede deshacer y borrará sus
+                                        progresos o cursos asociados.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cancelar</button>
+                                    <form action="{{ url_for('admin.eliminar_usuario', id=usuario.id) }}" method="POST"
+                                        style="display:inline;">
+                                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center py-4">No se encontraron usuarios.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

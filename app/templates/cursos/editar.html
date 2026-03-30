@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Editar Curso: {{ curso.titulo }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="titulo" class="form-label">Título del Curso</label>
+                        <input type="text" class="form-control" id="titulo" name="titulo" value="{{ curso.titulo }}"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion"
+                            rows="4">{{ curso.descripcion }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="nivel" class="form-label">Nivel de Dificultad</label>
+                        <select class="form-select" id="nivel" name="nivel" required>
+                            <option value="basico" {% if curso.nivel=='basico' %}selected{% endif %}>Básico</option>
+                            <option value="intermedio" {% if curso.nivel=='intermedio' %}selected{% endif %}>Intermedio
+                            </option>
+                            <option value="avanzado" {% if curso.nivel=='avanzado' %}selected{% endif %}>Avanzado
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}"
+                            class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

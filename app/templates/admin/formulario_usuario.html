@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">{{ titulo }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Datos Generales -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                            value="{{ usuario.email if usuario else '' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre Completo</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre"
+                            value="{{ usuario.nombre if usuario else '' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="numero_control" class="form-label">Número de Control / Matrícula</label>
+                        <input type="text" class="form-control" id="numero_control" name="numero_control"
+                            value="{{ usuario.numero_control if usuario else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" name="password" {{ 'required' if not
+                            usuario else '' }}
+                            placeholder="{{ 'Dejar en blanco para mantener la actual' if usuario else 'Crear contraseña' }}">
+                    </div>
+
+                    {% if not usuario %}
+                    <!-- Selección de Rol (Solo al crear) -->
+                    <div class="mb-3">
+                        <label for="rol" class="form-label">Rol de Usuario</label>
+                        <select class="form-select" id="rol" name="rol" required onchange="toggleEspecialidad()">
+                            <option value="">Seleccionar...</option>
+                            <option value="estudiante">Estudiante</option>
+                            <option value="docente">Docente</option>
+                            <option value="administrador">Administrador</option>
+                        </select>
+                    </div>
+                    {% else %}
+                    <!-- Rol informativo (complicado cambiar rol en edición sin migraciones complejas) -->
+                    <div class="mb-3">
+                        <label class="form-label">Rol Actual</label>
+                        <input type="text" class="form-control" value="{{ usuario.rol|capitalize }}" disabled>
+                    </div>
+                    {% endif %}
+
+                    <!-- Campo específico para Docentes -->
+                    <div class="mb-3" id="campo_especialidad"
+                        style="display: {{ 'block' if (usuario and usuario.rol == 'docente') else 'none' }};">
+                        <label for="especialidad" class="form-label">Especialidad (Solo Docentes)</label>
+                        {% set especialidad_val = '' %}
+                        {# Hack para recuperar especialidad si existe relación, requeriría pasar objeto docente a
+                        plantilla #}
+                        <input type="text" class="form-control" id="especialidad" name="especialidad"
+                            placeholder="Ej: Álgebra, Cálculo">
+                        <div class="form-text">Campo requerido para docentes.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('admin.lista_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleEspecialidad() {
+        const rol = document.getElementById('rol');
+        const campoEsp = document.getElementById('campo_especialidad');
+        if (rol && rol.value === 'docente') {
+            campoEsp.style.display = 'block';
+        } else if (rol) {
+            campoEsp.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 820px;">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="m-0"><i class="bi bi-gear-fill text-primary me-2"></i>Configuración</h2>
+        <a href="{{ url_for('main.perfil') }}" class="btn btn-outline-primary btn-sm rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i>Volver al perfil
+        </a>
+    </div>
+
+    <!-- Alerta para estudiantes nuevos sin info académica -->
+    {% if es_estudiante and not estudiante.carrera %}
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm border-0 mb-4" role="alert" style="border-left: 4px solid #f59e0b !important;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+            <div>
+                <h6 class="alert-heading mb-1">¡Completa tu información académica!</h6>
+                <p class="mb-0 small">Para una mejor experiencia en la plataforma, completa tu carrera, semestre y grupo en la sección de abajo.</p>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('main.configuracion') }}">
+        <!-- Información Académica (solo estudiantes) -->
+        {% if es_estudiante %}
+        <div class="card shadow mb-4" id="info-academica">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Información Académica</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="carrera" class="form-label fw-semibold">Carrera</label>
+                        <select class="form-select" id="carrera" name="carrera">
+                            <option value="" disabled {{ 'selected' if not estudiante.carrera }}>Selecciona una carrera</option>
+                            {% set carreras_itst = [
+                                "Ingeniería Industrial",
+                                "Ingeniería en Sistemas Computacionales",
+                                "Ingeniería en Animación Digital y Efectos Visuales",
+                                "Ingeniería en Gestión Empresarial",
+                                "Ingeniería Mecatrónica",
+                                "Ingeniería Informática",
+                                "Ingeniería en Industrias Alimentarias",
+                                "Licenciatura en Turismo"
+                            ] %}
+                            {% for c in carreras_itst %}
+                                <option value="{{ c }}" {{ 'selected' if estudiante.carrera == c }}>{{ c }}</option>
+                            {% endfor %}
+                            <option value="Otra" {{ 'selected' if estudiante.carrera and estudiante.carrera not in carreras_itst }}>Otra carrera</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="semestre" class="form-label fw-semibold">Semestre</label>
+                        <select class="form-select" id="semestre" name="semestre">
+                            <option value="" disabled {{ 'selected' if not estudiante.semestre }}>Semestre</option>
+                            {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {{ 'selected' if estudiante.semestre == i }}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="grupo" class="form-label fw-semibold">Grupo</label>
+                        <input type="text" class="form-control" id="grupo" name="grupo"
+                            value="{{ estudiante.grupo or '' }}" placeholder="Ej. A">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Apariencia -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-palette-fill text-primary me-2"></i>Apariencia</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <!-- Tema -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Tema de la interfaz</label>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <label class="config-option-card {{ 'active' if config.tema == 'claro' }}" for="tema_claro">
+                                <input type="radio" name="tema" id="tema_claro" value="claro" {{ 'checked' if config.tema == 'claro' }} class="d-none">
+                                <div class="config-option-inner">
+                                    <div class="config-option-preview" style="background: linear-gradient(135deg, #f8fafc, #e2e8f0);"></div>
+                                    <i class="bi bi-sun-fill"></i>
+                                    <span>Claro</span>
+                                </div>
+                            </label>
+                            <label class="config-option-card {{ 'active' if config.tema == 'oscuro' }}" for="tema_oscuro">
+                                <input type="radio" name="tema" id="tema_oscuro" value="oscuro" {{ 'checked' if config.tema == 'oscuro' }} class="d-none">
+                                <div class="config-option-inner">
+                                    <div class="config-option-preview" style="background: linear-gradient(135deg, #1e293b, #0f172a);"></div>
+                                    <i class="bi bi-moon-stars-fill"></i>
+                                    <span>Oscuro</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Tamaño de fuente -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Tamaño de fuente</label>
+                        <div class="d-flex gap-3 flex-wrap">
+                            {% for val, label, icon_size in [('pequeno', 'Pequeño', '0.85rem'), ('normal', 'Normal', '1rem'), ('grande', 'Grande', '1.15rem')] %}
+                            <label class="config-option-card compact {{ 'active' if config.tamano_fuente == val }}" for="fuente_{{ val }}">
+                                <input type="radio" name="tamano_fuente" id="fuente_{{ val }}" value="{{ val }}" {{ 'checked' if config.tamano_fuente == val }} class="d-none">
+                                <div class="config-option-inner">
+                                    <span style="font-size: {{ icon_size }}; font-weight: 700;">Aa</span>
+                                    <span>{{ label }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacidad -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Privacidad</h5>
+            </div>
+            <div class="card-body">
+                <div class="config-toggle-row">
+                    <div>
+                        <p class="fw-semibold mb-0">Ocultar del ranking público</p>
+                        <small class="text-muted">Tu nombre no aparecerá en el Leaderboard para otros estudiantes.</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input config-switch" type="checkbox"
+                            id="ocultar_ranking" name="ocultar_ranking"
+                            {{ 'checked' if config.ocultar_ranking }}>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notificaciones -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-bell-fill text-primary me-2"></i>Notificaciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="config-toggle-row mb-3">
+                    <div>
+                        <p class="fw-semibold mb-0">Nuevos cursos disponibles</p>
+                        <small class="text-muted">Recibe avisos cuando se publiquen nuevos cursos en la plataforma.</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input config-switch" type="checkbox"
+                            id="notif_nuevos_cursos" name="notif_nuevos_cursos"
+                            {{ 'checked' if config.notif_nuevos_cursos }}>
+                    </div>
+                </div>
+                <hr>
+                <div class="config-toggle-row">
+                    <div>
+                        <p class="fw-semibold mb-0">Recordatorio de racha</p>
+                        <small class="text-muted">Recibe un aviso cuando tu racha de estudio está en riesgo de perderse.</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input config-switch" type="checkbox"
+                            id="notif_racha" name="notif_racha"
+                            {{ 'checked' if config.notif_racha }}>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón guardar -->
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
+                <i class="bi bi-check-lg me-1"></i>Guardar Configuración
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .config-option-card {
+        cursor: pointer;
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        padding: 1rem 1.5rem;
+        min-width: 140px;
+        transition: all var(--transition-normal);
+        background: var(--bg-card);
+    }
+    .config-option-card.compact {
+        padding: 0.75rem 1.25rem;
+        min-width: 100px;
+    }
+    .config-option-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .config-option-card.active {
+        border-color: var(--primary-color);
+        background: rgba(0, 51, 102, 0.04);
+        box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+    }
+    .config-option-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .config-option-preview {
+        width: 60px;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    .config-toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+    .config-switch {
+        width: 3rem;
+        height: 1.5rem;
+        cursor: pointer;
+    }
+    .config-switch:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+</style>
+
+<script>
+    // Toggle active class on option cards
+    document.querySelectorAll('.config-option-card input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const name = this.name;
+            document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                r.closest('.config-option-card').classList.remove('active');
+            });
+            this.closest('.config-option-card').classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

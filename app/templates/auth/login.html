@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center animate-slide-up" style="min-height: 70vh; align-items: center;">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-lg border-0" style="border-radius: var(--border-radius-lg); overflow: hidden;">
+            <div class="card-header text-center py-5" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); border: none;">
+                <i class="bi bi-mortarboard-fill display-4" style="color: var(--accent-color);"></i>
+                <h3 class="text-white mt-3 mb-0 fw-bold" style="letter-spacing: 0.5px;">Matatucas</h3>
+                <p class="mb-0 small mt-1" style="color: rgba(255, 255, 255, 0.8);">Plataforma Educativa con IA</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <p class="text-center text-muted mb-4" style="font-size: 0.95rem;">
+                    Inicia sesión con tu cuenta institucional del TecNM para acceder a la plataforma.
+                </p>
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('auth.login') }}" class="btn d-flex align-items-center justify-content-center gap-2 shadow-sm" 
+                       style="background-color: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 12px 20px; font-size: 1rem; transition: all var(--transition-fast);"
+                       onmouseover="this.style.backgroundColor='var(--bg-card)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)';"
+                       onmouseout="this.style.backgroundColor='var(--bg-body)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)';">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 21 21">
+                            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                        </svg>
+                        <span class="fw-semibold">Continuar con Microsoft</span>
+                    </a>
+                </div>
+
+                <hr class="my-4" style="opacity: 0.1;">
+
+                <div class="text-center">
+                    <small class="text-muted d-block mb-1">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Usa tu correo institucional
+                    </small>
+                    <code class="px-2 py-1 object-fit-contain" style="background-color: var(--bg-body); border-radius: 4px; color: var(--primary-color);">@teziutlan.tecnm.mx</code>
+                </div>
+            </div>
+            <div class="card-footer text-center py-3 border-0" style="background-color: rgba(0, 51, 102, 0.03);">
+                <small class="text-muted d-flex align-items-center justify-content-center gap-1">
+                    <i class="bi bi-shield-check text-success"></i>
+                    Sesión protegida por Azure AD
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

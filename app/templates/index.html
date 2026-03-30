@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-5 text-center container">
+    <div class="row py-lg-5">
+        <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="mb-4">
+                <i class="bi bi-stars text-warning display-4"></i>
+            </div>
+            <h1 class="fw-bold display-3 mb-3">Domina las Matemáticas con <span class="text-primary-brand">IA</span>
+            </h1>
+            <p class="lead text-muted mb-5">
+                La plataforma inteligente que se adapta a ti. Aprende a tu ritmo, gana recompensas y recibe ayuda
+                instantánea de nuestro tutor virtual.
+            </p>
+            <p>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3 shadow-sm">
+                    <i class="bi bi-play-fill"></i> Continuar Aprendiendo
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary btn-lg px-4 gap-3 shadow-sm">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Comenzar Ahora
+                </a>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<div class="container px-4 py-5" id="features">
+    <h2 class="pb-2 border-bottom text-center mb-5">¿Por qué usar MathAI?</h2>
+    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+        <div class="col d-flex align-items-start">
+            <div class="icon-square bg-primary-subtle text-primary-brand flex-shrink-0 me-3 rounded-3 p-3">
+                <i class="bi bi-cpu-fill fs-3"></i>
+            </div>
+            <div>
+                <h4>Inteligencia Artificial</h4>
+                <p>Ejercicios generados al instante y un chatbot tutor que te explica paso a paso, 24/7.</p>
+            </div>
+        </div>
+        <div class="col d-flex align-items-start">
+            <div class="icon-square bg-primary-subtle text-primary-brand flex-shrink-0 me-3 rounded-3 p-3">
+                <i class="bi bi-trophy-fill fs-3"></i>
+            </div>
+            <div>
+                <h4>Gamificación</h4>
+                <p>Gana puntos, mantén tu racha y desbloquea insignias mientras aprendes. ¡Hazlo divertido!</p>
+            </div>
+        </div>
+        <div class="col d-flex align-items-start">
+            <div class="icon-square bg-primary-subtle text-primary-brand flex-shrink-0 me-3 rounded-3 p-3">
+                <i class="bi bi-graph-up-arrow fs-3"></i>
+            </div>
+            <div>
+                <h4>Progreso Real</h4>
+                <p>Sigue tu avance con estadísticas detalladas y certificados al completar tus cursos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer Simple -->
+<footer class="pt-3 mt-4 text-muted border-top text-center pb-4">
+    &copy; 2026 MathAI. Plataforma Educativa con IA.
+</footer>
+{% endblock %}

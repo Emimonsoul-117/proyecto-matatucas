@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-5 align-items-center animate-fade-in">
+        <div class="col-md-8">
+            <h1 class="fw-bold">Hola, <span class="text-primary-brand">{{ nombre }}</span> 👋</h1>
+            <p class="text-muted">¿Listo para aprender algo nuevo hoy?</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
+            <a href="{{ url_for('cursos.crear_curso') }}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg"></i> Nuevo Curso
+            </a>
+            {% endif %}
+            <a href="{{ url_for('cursos.lista_cursos') }}" class="btn btn-outline-primary ms-2">
+                Explorar Cursos
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Courses Grid -->
+    <h4 class="mb-4 text-muted text-uppercase small fw-bold">
+        {% if current_user.rol == 'estudiante' %}Mis Cursos{% else %}Cursos que Gestionas{% endif %}
+    </h4>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for item in cursos %}
+        {% set curso = item.curso %}
+        {% set raw_p = item.progreso or 0 %}
+        {% set progreso = raw_p if raw_p <= 100 else 100 %}
+        <div class="col animate-slide-up">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-primary-subtle text-primary-brand px-3 py-2 rounded-pill shadow-sm">{{ curso.nivel|capitalize }}</span>
+                        {% if progreso >= 100 %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Completado</span>
+                        {% else %}
+                        <i class="bi bi-bookmark-fill text-warning"></i>
+                        {% endif %}
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">{{ curso.titulo }}</h5>
+                    <p class="card-text text-muted small mb-3">{{ curso.descripcion[:80] if curso.descripcion else ''
+                        }}...</p>
+
+                    <!-- Progress Bar for Students -->
+                    {% if current_user.rol == 'estudiante' %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Progreso</small>
+                            <small class="fw-bold {% if progreso >= 100 %}text-success{% endif %}">{{ (progreso | round(0, 'common')) | int }}%</small>
+                        </div>
+                        <div class="progress rounded-pill shadow-sm" style="height: 8px; background-color: rgba(0, 51, 102, 0.1);">
+                            <div class="progress-bar rounded-pill {% if progreso >= 100 %}bg-success{% else %}bg-primary{% endif %}"
+                                role="progressbar" style="width: {{ progreso }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white border-0 pt-0 pb-3">
+                    <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-sm btn-primary w-100">
+                        {% if current_user.rol == 'estudiante' %}
+                        {% if progreso >= 100 %}Ver Certificado{% elif progreso > 0 %}Continuar{% else %}Empezar{% endif
+                        %}
+                        {% else %}Gestionar{% endif %}
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col">
+            <div
+                class="card h-100 border-0 shadow-sm bg-primary-subtle d-flex align-items-center justify-content-center p-5 text-center">
+                <div>
+                    <i class="bi bi-search text-primary-brand display-4 mb-3"></i>
+                    <h5>{% if current_user.rol == 'estudiante' %}Aún no estás inscrito{% else %}No has creado cursos{%
+                        endif %}</h5>
+                    <a href="{{ url_for('cursos.lista_cursos') }}" class="btn btn-sm btn-primary mt-2">
+                        {% if current_user.rol == 'estudiante' %}Explorar Catálogo{% else %}Crear Curso{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
