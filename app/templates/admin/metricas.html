@@ -1,0 +1,161 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4 border-bottom pb-2">
+    <h1 class="h3"><i class="bi bi-bar-chart-fill text-primary me-2"></i> Análisis Integrales</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar Datos
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Gráfico Demografía -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h6 class="fw-bold text-uppercase text-muted small"><i class="bi bi-pie-chart me-1"></i> Distribución por Carreras</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="carrerasChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico Engagement (Insignias) -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h6 class="fw-bold text-uppercase text-muted small"><i class="bi bi-controller me-1"></i> Engagement Gamificado</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="insigniasChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Top Cursos Populares -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h6 class="fw-bold text-uppercase text-muted small"><i class="bi bi-trophy me-1"></i> Cursos Más Populares</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4">Curso</th>
+                                <th>Alumnos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c, total in cursos_top %}
+                            <tr>
+                                <td class="px-4 fw-bold">{{ c.titulo }}</td>
+                                <td>
+                                    <span class="badge bg-primary rounded-pill px-3">{{ total }}</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="2" class="text-center py-4 text-muted">Aún no hay cursos inscritos.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dificultad Ejercicios -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 rounded-4">
+            <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                <h6 class="fw-bold text-uppercase text-danger small"><i class="bi bi-exclamation-triangle me-1"></i> Top Ejercicios Fallados</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4">ID Ejercicio</th>
+                                <th>Intentos Fallidos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eq, fallos in peores_ejercicios %}
+                            <tr>
+                                <td class="px-4 text-truncate" style="max-width: 200px;">
+                                    <code class="text-dark bg-light px-2 py-1 rounded">Ej-{{ eq.id }}</code> 
+                                    <span class="small text-muted ms-2">{{ eq.pregunta[:30] }}...</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger rounded-pill px-3">{{ fallos }}</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="2" class="text-center py-4 text-muted">Aún no hay fallos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cargar Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Datos para Carreras
+        const ctxCarreras = document.getElementById('carrerasChart').getContext('2d');
+        new Chart(ctxCarreras, {
+            type: 'doughnut',
+            data: {
+                labels: {{ carreras_labels | safe }},
+                datasets: [{
+                    data: {{ carreras_datos | safe }},
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(107, 114, 128, 0.8)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Datos para Insignias
+        const ctxInsignias = document.getElementById('insigniasChart').getContext('2d');
+        new Chart(ctxInsignias, {
+            type: 'bar',
+            data: {
+                labels: {{ insignias_labels | safe }},
+                datasets: [{
+                    label: 'Insignias Obtenidas',
+                    data: {{ insignias_datos | safe }},
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -79,12 +79,14 @@
 
                             {% if comprado %}
                                 <form method="POST" action="{{ url_for('main.equipar_articulo', id_articulo=art.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm rounded-pill px-3 {{ 'btn-success' if equipado else 'btn-outline-primary' }}">
                                         {{ '✓ Equipado' if equipado else 'Equipar' }}
                                     </button>
                                 </form>
                             {% else %}
                                 <form method="POST" action="{{ url_for('main.comprar_articulo', id_articulo=art.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3"
                                         {{ 'disabled' if estudiante.monedas < art.precio }}>
                                         <i class="bi bi-coin me-1"></i>{{ art.precio }}
@@ -117,12 +119,14 @@
 
                             {% if comprado %}
                                 <form method="POST" action="{{ url_for('main.equipar_articulo', id_articulo=art.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm rounded-pill px-3 {{ 'btn-success' if equipado else 'btn-outline-primary' }}">
                                         {{ '✓ Equipado' if equipado else 'Equipar' }}
                                     </button>
                                 </form>
                             {% else %}
                                 <form method="POST" action="{{ url_for('main.comprar_articulo', id_articulo=art.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3"
                                         {{ 'disabled' if estudiante.monedas < art.precio }}>
                                         <i class="bi bi-coin me-1"></i>{{ art.precio }}

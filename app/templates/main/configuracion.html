@@ -24,6 +24,7 @@
     {% endif %}
 
     <form method="POST" action="{{ url_for('main.configuracion') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <!-- Información Académica (solo estudiantes) -->
         {% if es_estudiante %}
         <div class="card shadow mb-4" id="info-academica">

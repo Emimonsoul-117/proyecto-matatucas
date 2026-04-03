@@ -2,8 +2,12 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from . import admin
 from .. import bd
-from ..modelos import Usuario, Estudiante, Docente
+from ..modelos import Usuario, Estudiante, Docente, Curso, Inscripcion, RegistroAuditoria, ConfiguracionGlobal
 from werkzeug.security import generate_password_hash
+from ..servicios.auditoria_servicio import registrar_accion
+from ..servicios.reportes_servicio import generar_reporte_docente_pdf
+from flask import send_file
+import io
 
 # Decorador personalizado (si no está global, lo definimos o importamos)
 from functools import wraps
@@ -16,6 +20,31 @@ def admin_required(f):
             return redirect(url_for('main.index'))
         return f(*args, **kwargs)
     return decorated_function
+
+@admin.route('/')
+@admin.route('/dashboard')
+@login_required
+@admin_required
+def dashboard():
+    # Métricas de resumen
+    total_estudiantes = Usuario.query.filter_by(rol='estudiante').count()
+    total_docentes = Usuario.query.filter_by(rol='docente').count()
+    total_cursos = Curso.query.count()
+    total_inscripciones = Inscripcion.query.count()
+    
+    # Cursos en revisión
+    cursos_pendientes = Curso.query.filter_by(estado='revision').all()
+    
+    # Últimas acciones de auditoría
+    ultimas_acciones = RegistroAuditoria.query.order_by(RegistroAuditoria.timestamp.desc()).limit(10).all()
+    
+    return render_template('admin/dashboard_admin.html', 
+                           total_estudiantes=total_estudiantes,
+                           total_docentes=total_docentes,
+                           total_cursos=total_cursos,
+                           total_inscripciones=total_inscripciones,
+                           cursos_pendientes=cursos_pendientes,
+                           ultimas_acciones=ultimas_acciones)
 
 @admin.route('/usuarios')
 @login_required
@@ -149,5 +178,162 @@ def eliminar_usuario(id):
         
     bd.session.delete(usuario)
     bd.session.commit()
+    
+    registrar_accion('ELIMINAR_USUARIO', {'id_eliminado': id, 'nombre': usuario.nombre})
+    
     flash('Usuario eliminado permanentemente.', 'exito')
     return redirect(url_for('admin.lista_usuarios'))
+
+@admin.route('/docentes')
+@login_required
+@admin_required
+def lista_docentes():
+    docentes = Docente.query.all()
+    docentes_metricas = []
+    
+    for d in docentes:
+        usuario = Usuario.query.get(d.id_usuario)
+        cursos = Curso.query.filter_by(id_docente=d.id_usuario).all()
+        total_estudiantes = 0
+        progreso_acumulado = 0
+        total_inscripciones = 0
+        
+        for c in cursos:
+            inscs = Inscripcion.query.filter_by(id_curso=c.id).all()
+            count = len(inscs)
+            total_estudiantes += count
+            total_inscripciones += count
+            for i in inscs:
+                progreso_acumulado += i.progreso
+        
+        avg_progreso = round(progreso_acumulado / total_inscripciones, 1) if total_inscripciones > 0 else 0
+        
+        docentes_metricas.append({
+            'id': d.id_usuario,
+            'nombre': usuario.nombre,
+            'especialidad': d.especialidad,
+            'num_cursos': len(cursos),
+            'total_estudiantes': total_estudiantes,
+            'avg_progreso': avg_progreso
+        })
+        
+    return render_template('admin/lista_docentes.html', docentes=docentes_metricas)
+
+@admin.route('/docentes/<int:id>/reporte')
+@login_required
+@admin_required
+def descargar_reporte_docente(id):
+    usuario = Usuario.query.get_or_404(id)
+    docente = Docente.query.get_or_404(id)
+    cursos = Curso.query.filter_by(id_docente=id).all()
+    
+    cursos_data = []
+    for c in cursos:
+        inscs = Inscripcion.query.filter_by(id_curso=c.id).all()
+        avg = round(sum([i.progreso for i in inscs]) / len(inscs), 1) if inscs else 0
+        cursos_data.append({
+            'titulo': c.titulo,
+            'estudiantes': len(inscs),
+            'progreso_promedio': avg
+        })
+    
+    pdf_buffer = generar_reporte_docente_pdf(usuario.nombre, cursos_data)
+    
+    registrar_accion('GENERAR_REPORTE_PDF', {'docente': usuario.nombre})
+    
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f'Reporte_{usuario.nombre.replace(" ", "_")}.pdf',
+        mimetype='application/pdf'
+    )
+
+@admin.route('/auditoria')
+@login_required
+@admin_required
+def lista_auditoria():
+    registros = RegistroAuditoria.query.order_by(RegistroAuditoria.timestamp.desc()).all()
+    return render_template('admin/lista_auditoria.html', registros=registros)
+
+@admin.route('/cursos/revision')
+@login_required
+@admin_required
+def lista_revision_cursos():
+    cursos = Curso.query.filter_by(estado='revision').all()
+    return render_template('admin/revision_cursos.html', cursos=cursos)
+
+@admin.route('/metricas')
+@login_required
+@admin_required
+def metricas():
+    # Top 5 Cursos populares
+    cursos_top = bd.session.query(
+        Curso, 
+        bd.func.count(Inscripcion.id).label('total_alumnos')
+    ).outerjoin(Inscripcion, Curso.id == Inscripcion.id_curso)\
+     .group_by(Curso.id)\
+     .order_by(bd.desc('total_alumnos'))\
+     .limit(5).all()
+
+    # Dificultad de ejercicios (ejercicios con más fallos)
+    from ..modelos import Ejercicio, IntentoEjercicio
+    peores_ejercicios = bd.session.query(
+        Ejercicio,
+        bd.func.count(IntentoEjercicio.id).label('fallos')
+    ).join(IntentoEjercicio, Ejercicio.id == IntentoEjercicio.id_ejercicio)\
+     .filter(IntentoEjercicio.es_correcta == False)\
+     .group_by(Ejercicio.id)\
+     .order_by(bd.desc('fallos'))\
+     .limit(5).all()
+
+    # Demografía por carreras
+    carreras = bd.session.query(
+        Estudiante.carrera,
+        bd.func.count(Estudiante.id_usuario).label('total')
+    ).group_by(Estudiante.carrera).all()
+    
+    # Preparar datos para Chart.js
+    carreras_labels = [c[0] if c[0] else "Sin Especificar" for c in carreras]
+    carreras_datos = [c[1] for c in carreras]
+
+    # Distribución de insignias
+    from ..modelos import InsigniaEstudiante, Insignia
+    insignias = bd.session.query(
+        Insignia.nombre,
+        bd.func.count(InsigniaEstudiante.id).label('total')
+    ).outerjoin(InsigniaEstudiante, Insignia.id == InsigniaEstudiante.id_insignia)\
+     .group_by(Insignia.id).all()
+
+    insignias_labels = [i[0] for i in insignias]
+    insignias_datos = [i[1] for i in insignias]
+
+    return render_template('admin/metricas.html',
+                           cursos_top=cursos_top,
+                           peores_ejercicios=peores_ejercicios,
+                           carreras_labels=carreras_labels,
+                           carreras_datos=carreras_datos,
+                           insignias_labels=insignias_labels,
+                           insignias_datos=insignias_datos)
+
+@admin.route('/cursos/<int:id>/cambiar-estado', methods=['POST'])
+@login_required
+@admin_required
+def cambiar_estado_curso(id):
+    curso = Curso.query.get_or_404(id)
+    nuevo_estado = request.form.get('estado')
+    
+    if nuevo_estado in ['borrador', 'revision', 'publicado']:
+        estado_anterior = curso.estado
+        curso.estado = nuevo_estado
+        bd.session.commit()
+        
+        registrar_accion('CAMBIO_ESTADO_CURSO', {
+            'id_curso': curso.id,
+            'titulo': curso.titulo,
+            'nuevo_estado': nuevo_estado,
+            'estado_anterior': estado_anterior
+        })
+        
+        flash(f'Estado del curso "{curso.titulo}" actualizado a {nuevo_estado}.', 'exito')
+    
+    return redirect(url_for('admin.dashboard'))

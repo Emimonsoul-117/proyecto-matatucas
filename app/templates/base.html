@@ -153,8 +153,21 @@
                         </a>
                     </li>
                     {% if current_user.rol == 'administrador' %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin.lista_usuarios') }}">Usuarios</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold text-primary" href="#" id="dropdownAdmin" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-shield-lock-fill"></i> Panel Operativo
+                        </a>
+                        <ul class="dropdown-menu shadow" aria-labelledby="dropdownAdmin">
+                            <li><h6 class="dropdown-header text-uppercase small">Métricas y Operación</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-grid-1x2-fill me-2 text-muted"></i> Resumen Operativo</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.metricas') }}"><i class="bi bi-bar-chart-fill me-2 text-muted"></i> Análisis Integrales</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_revision_cursos') }}"><i class="bi bi-journal-check me-2 text-muted"></i> Evaluación Cursos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-uppercase small">Personas y Seguridad</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_usuarios') }}"><i class="bi bi-people-fill me-2 text-muted"></i> Control de Usuarios</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_docentes') }}"><i class="bi bi-person-vcard-fill me-2 text-muted"></i> Rendimiento Docente</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_auditoria') }}"><i class="bi bi-shield-lock-fill me-2 text-muted"></i> Log de Auditoría</a></li>
+                        </ul>
                     </li>
                     {% endif %}
                     <li class="nav-item dropdown">

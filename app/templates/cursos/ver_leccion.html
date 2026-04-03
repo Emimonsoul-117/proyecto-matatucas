@@ -63,6 +63,10 @@
         border-left-color: #16a34a;
     }
 
+    .seccion-card.tipo-recurso {
+        border-left-color: #0891b2;
+    }
+
     .seccion-label {
         display: flex;
         align-items: center;
@@ -88,6 +92,11 @@
     .tipo-ejercicio .seccion-label {
         background: #f0fdf4;
         color: #16a34a;
+    }
+
+    .tipo-recurso .seccion-label {
+        background: #ecfeff;
+        color: #0891b2;
     }
 
     .seccion-content {
@@ -375,8 +384,11 @@
                     <i class="bi bi-clock-history fs-4"></i>
                     <span id="textoEsperando">
                         {% set tiene_video = secciones | selectattr('tipo', 'equalto', 'video') | list | length > 0 %}
-                        {% if tiene_video %}Termina de ver el video para completar la lección{% else %}Cargando...{%
-                        endif %}
+                        {% set tiene_ejercicio = secciones | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
+                        {% if tiene_video and tiene_ejercicio %}Termina el video y resuelve los ejercicios para completar la lección
+                        {% elif tiene_video %}Termina de ver el video para completar la lección
+                        {% elif tiene_ejercicio %}Resuelve los ejercicios para completar la lección
+                        {% else %}Completa la lección para avanzar{% endif %}
                     </span>
                 </div>
                 {% endif %}
@@ -470,6 +482,25 @@
                         </div>
                     </div>
                 </div>
+
+                {# === SECCIÓN RECURSO === #}
+                {% elif seccion.tipo == 'recurso' %}
+                <div class="seccion-card tipo-recurso">
+                    <div class="seccion-label">
+                        <i class="bi bi-paperclip"></i> Recurso
+                    </div>
+                    <div class="seccion-content">
+                        <div class="fw-semibold mb-2">{{ seccion.titulo or 'Enlace de recurso' }}</div>
+                        {% if seccion.url %}
+                        <a class="btn btn-outline-primary btn-sm" href="{{ seccion.url }}" target="_blank" rel="noopener">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Abrir recurso
+                        </a>
+                        {% else %}
+                        <div class="text-muted small">Sin URL configurada.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
                 {% endif %}
 
                 {% endfor %}
@@ -479,12 +510,21 @@
                     <a href="{{ url_for('cursos.ver_curso', id=leccion.id_curso) }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> Volver al Curso
                     </a>
-                    {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
-                    <a href="{{ url_for('cursos.nueva_leccion', id_curso=leccion.id_curso) }}"
-                        class="btn btn-outline-primary">
-                        <i class="bi bi-plus-circle"></i> Agregar Otra Lección
-                    </a>
-                    {% endif %}
+                    <div class="d-flex gap-2 align-items-center">
+                        {% set tiene_ejercicio = secciones | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
+                        {% if current_user.rol == 'estudiante' and tiene_ejercicio and not completada %}
+                        <a href="{{ url_for('cursos.hacer_ejercicios', id_leccion=leccion.id) }}"
+                            class="btn btn-success">
+                            <i class="bi bi-check2-square me-1"></i>Resolver ejercicios
+                        </a>
+                        {% endif %}
+                        {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
+                        <a href="{{ url_for('cursos.nueva_leccion', id_curso=leccion.id_curso) }}"
+                            class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> Agregar Otra Lección
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -507,6 +547,11 @@
                         {% if 'ejercicio' in tipos_presentes %}
                         <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#f0fdf4;">
                             <span>✏️</span><small class="fw-semibold text-success">Incluye Ejercicios</small>
+                        </div>
+                        {% endif %}
+                        {% if 'recurso' in tipos_presentes %}
+                        <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#ecfeff;">
+                            <span>🔗</span><small class="fw-semibold" style="color:#0891b2;">Incluye Recursos</small>
                         </div>
                         {% endif %}
                     </div>

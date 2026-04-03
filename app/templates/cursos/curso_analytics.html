@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 1100px;">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="fw-bold mb-1">Analíticas de curso</h1>
+            <p class="text-muted mb-0">
+                {{ curso.titulo }}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Volver al curso
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Lecciones</div>
+                    <div class="fw-bold fs-4">{{ total_lecciones }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Estudiantes</div>
+                    <div class="fw-bold fs-4">{{ total_estudiantes }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Tasa completitud</div>
+                    <div class="fw-bold fs-4">{{ tasa_completitud|round(1, 'common') }}%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Promedio puntaje (intentos)</div>
+                    <div class="fw-bold fs-4">{{ avg_puntaje_global|round(1, 'common') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="fw-bold mb-1"><i class="bi bi-check2-square me-2 text-success"></i>Tasa de acierto global</div>
+                    <div class="text-muted">Correctas / Intentos</div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold fs-4">{{ tasa_correcta|round(1, 'common') }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white">
+            <div class="fw-bold">
+                <i class="bi bi-graph-up me-2 text-primary"></i>Alumnos (ordenados por progreso)
+            </div>
+        </div>
+        <div class="card-body">
+            {% if estudiantes|length == 0 %}
+            <div class="text-muted">No hay estudiantes inscritos.</div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Alumno</th>
+                            <th>Progreso</th>
+                            <th>Avg. puntaje</th>
+                            <th>Correctas</th>
+                            <th>Intentos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for est in estudiantes %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ est.usuario.nombre }}</div>
+                                <small class="text-muted">{{ est.usuario.numero_control or '-' }}</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold{% if est.progreso >= 100 %} text-success{% endif %}">
+                                    {{ est.progreso|int }}%
+                                </span>
+                            </td>
+                            <td>{{ est.avg_puntaje|round(1, 'common') }}</td>
+                            <td>{{ est.correctas }}</td>
+                            <td>{{ est.total_intentos }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+

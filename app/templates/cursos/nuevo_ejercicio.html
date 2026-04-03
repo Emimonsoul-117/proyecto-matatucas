@@ -16,6 +16,7 @@
                     Pensando un ejercicio matemático con Gemini 2.5 Flash...
                 </div>
                 <form method="POST" id="formEjercicio">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-3">
                         <label for="enunciado" class="form-label">Enunciado / Pregunta</label>
                         <textarea class="form-control" id="enunciado" name="enunciado" rows="3" required

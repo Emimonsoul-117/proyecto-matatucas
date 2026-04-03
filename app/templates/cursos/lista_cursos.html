@@ -31,6 +31,7 @@
                                 <li>
                                     <form action="{{ url_for('cursos.eliminar_curso', id=curso.id) }}" method="POST"
                                         onsubmit="return confirm('¿Eliminar curso?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="dropdown-item text-danger"><i
                                                 class="bi bi-trash me-2"></i>Eliminar</button>
                                     </form>

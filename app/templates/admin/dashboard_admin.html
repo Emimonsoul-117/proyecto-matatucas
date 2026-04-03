@@ -1,0 +1,133 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="container-fluid py-2">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4 border-bottom pb-2">
+        <h1 class="h3"><i class="bi bi-speedometer2 text-primary me-2"></i> Resumen General</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{{ url_for('admin.lista_auditoria') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-shield-lock"></i> Ver Auditoría
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75 small">Estudiantes Totales</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_estudiantes }}</h2>
+                    <i class="bi bi-people position-absolute bottom-0 end-0 p-3 opacity-25 display-4"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75 small">Docentes Activos</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_docentes }}</h2>
+                    <i class="bi bi-person-badge position-absolute bottom-0 end-0 p-3 opacity-25 display-4"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75 small">Cursos en Catálogo</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_cursos }}</h2>
+                    <i class="bi bi-book position-absolute bottom-0 end-0 p-3 opacity-25 display-4"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase opacity-75 small">Inscripciones</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_inscripciones }}</h2>
+                    <i class="bi bi-journal-check position-absolute bottom-0 end-0 p-3 opacity-25 display-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Espacio Reservado si se quiere poner un gráfico general luego -->
+        <div class="col-lg-7 mb-4">
+            <div class="card border-0 shadow-sm h-100 bg-light">
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-bar-chart-line display-4 mb-3"></i>
+                        <p>Visita el panel de <strong>Análisis Integrales</strong> para ver las métricas de Cursos y Usuarios.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registro de Auditoría (Resumen) -->
+        <div class="col-lg-5 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-activity"></i> Actividad Reciente del Sistema</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for accion in ultimas_acciones %}
+                        <li class="list-group-item px-3 py-2 border-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-primary small fw-bold">{{ accion.accion }}</h6>
+                                <small class="text-muted">{{ accion.timestamp.strftime('%H:%M') }}</small>
+                            </div>
+                            <p class="mb-1 small">Usuario #{{ accion.id_usuario }} - IP: {{ accion.ip_address }}</p>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{{ url_for('admin.lista_auditoria') }}" class="btn btn-sm btn-link">Ver registro completo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Directos Profesionales -->
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a href="{{ url_for('admin.lista_docentes') }}" class="card text-decoration-none border-0 shadow-sm h-100 btn-outline-light">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-graph-up-arrow display-5 text-primary mb-3"></i>
+                    <h5 class="card-title text-dark">Métricas Docentes</h5>
+                    <p class="card-text text-muted small">Analiza el desempeño y alcance de los profesores.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('admin.lista_usuarios') }}" class="card text-decoration-none border-0 shadow-sm h-100 btn-outline-light">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-person-gear display-5 text-success mb-3"></i>
+                    <h5 class="card-title text-dark">Gestión Académica</h5>
+                    <p class="card-text text-muted small">Control total sobre cuentas de alumnos y docentes.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-hdd-network display-5 text-info mb-3"></i>
+                    <h5 class="card-title">Estado de Servicios</h5>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <span class="badge rounded-pill bg-success">BD OK</span>
+                        <span class="badge rounded-pill bg-success">Gemini Pro OK</span>
+                        <span class="badge rounded-pill bg-success">Audit OK</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

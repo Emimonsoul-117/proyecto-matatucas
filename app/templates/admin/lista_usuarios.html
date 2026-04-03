@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
 
-{% block content %}
+{% block admin_content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Administración de Usuarios</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
@@ -99,6 +99,7 @@
                                         data-bs-dismiss="modal">Cancelar</button>
                                     <form action="{{ url_for('admin.eliminar_usuario', id=usuario.id) }}" method="POST"
                                         style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="btn btn-danger">Eliminar</button>
                                     </form>
                                 </div>

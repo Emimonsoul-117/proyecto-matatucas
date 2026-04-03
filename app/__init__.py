@@ -1,12 +1,15 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import text
 from config import configuracion
 
 # Inicialización de extensiones
 bd = SQLAlchemy()
 login_manager = LoginManager()
+csrf = CSRFProtect()
+
 login_manager.login_view = 'auth.login_page'
 login_manager.login_message = "Por favor inicia sesión para acceder a esta página."
 
@@ -40,6 +43,59 @@ def _ensure_codigo_curso_column(app):
             )
 
 
+def _ensure_bloqueado_inscripciones_column(app):
+    """Si la tabla inscripciones no tiene bloqueado (BD antigua), la añade."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'inscripciones'
+                          AND COLUMN_NAME = 'bloqueado'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE inscripciones "
+                            "ADD COLUMN bloqueado BOOLEAN NOT NULL DEFAULT FALSE AFTER progreso"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning(
+                "No se pudo asegurar la columna inscripciones.bloqueado: %s. "
+                "Si ves error de esquema, revisa el ALTER manualmente.",
+                exc,
+            )
+def _ensure_estado_cursos_column(app):
+    """Añade la columna estado a cursos si falta (necesario para Matatucas Pro)."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'cursos'
+                          AND COLUMN_NAME = 'estado'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos ADD COLUMN estado ENUM('borrador', 'revision', 'publicado') NOT NULL DEFAULT 'borrador' AFTER fecha_creacion"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning("No se pudo asegurar la columna cursos.estado: %s", exc)
+
+
 def crear_app(nombre_config='por_defecto'):
     app = Flask(__name__)
     app.config.from_object(configuracion[nombre_config])
@@ -47,7 +103,19 @@ def crear_app(nombre_config='por_defecto'):
     # Inicializar extensiones
     bd.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
+    
     _ensure_codigo_curso_column(app)
+
+    _ensure_bloqueado_inscripciones_column(app)
+    _ensure_estado_cursos_column(app)
+
+    # Crea tablas nuevas faltantes (no altera tablas existentes).
+    # Esto permite que nuevas entidades (p. ej. intentos_ejercicios) aparezcan
+    # sin requerir migraciones completas mientras siga el esquema actual.
+    with app.app_context():
+        from . import modelos  # noqa: F401
+        bd.create_all()
 
     # Registro de Blueprints
     from .auth import auth as auth_blueprint

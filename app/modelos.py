@@ -80,6 +80,7 @@ class Curso(bd.Model):
     nivel = bd.Column(bd.Enum('basico', 'intermedio', 'avanzado'), nullable=False)
     id_docente = bd.Column(bd.Integer, bd.ForeignKey('docentes.id_usuario'))
     fecha_creacion = bd.Column(bd.DateTime, default=datetime.utcnow)
+    estado = bd.Column(bd.Enum('borrador', 'revision', 'publicado'), default='borrador', nullable=False)
     
     # Relaciones
     lecciones = bd.relationship('Leccion', backref='curso', lazy=True)
@@ -115,6 +116,38 @@ class Ejercicio(bd.Model):
     respuesta_correcta = bd.Column(bd.String(255), nullable=False)
     dificultad = bd.Column(bd.Integer, default=1)
 
+
+class IntentoEjercicio(bd.Model):
+    __tablename__ = 'intentos_ejercicios'
+
+    id = bd.Column(bd.Integer, primary_key=True)
+    id_estudiante = bd.Column(
+        bd.Integer,
+        bd.ForeignKey('estudiantes.id_usuario'),
+        nullable=False,
+        index=True,
+    )
+    id_ejercicio = bd.Column(
+        bd.Integer,
+        bd.ForeignKey('ejercicios.id'),
+        nullable=False,
+        index=True,
+    )
+    intento_num = bd.Column(bd.Integer, nullable=False, default=1)
+    respuesta_usuario = bd.Column(bd.String(255), nullable=True)
+    es_correcta = bd.Column(bd.Boolean, nullable=False, default=False)
+    puntaje = bd.Column(bd.Float, nullable=False, default=0.0)
+    fecha_intento = bd.Column(bd.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        bd.UniqueConstraint(
+            'id_estudiante',
+            'id_ejercicio',
+            'intento_num',
+            name='unique_intento_ejercicio',
+        ),
+    )
+
 class Inscripcion(bd.Model):
     __tablename__ = 'inscripciones'
     id = bd.Column(bd.Integer, primary_key=True)
@@ -122,6 +155,7 @@ class Inscripcion(bd.Model):
     id_curso = bd.Column(bd.Integer, bd.ForeignKey('cursos.id'), nullable=False)
     fecha_inscripcion = bd.Column(bd.DateTime, default=datetime.utcnow)
     progreso = bd.Column(bd.Float, default=0.0)
+    bloqueado = bd.Column(bd.Boolean, default=False, nullable=False)
 
 class Insignia(bd.Model):
     __tablename__ = 'insignias'
@@ -201,3 +235,23 @@ def progreso_por_lecciones_completadas(id_estudiante, id_curso):
         .count()
     )
     return min(100.0, round((hechas / total) * 100, 1))
+
+
+class RegistroAuditoria(bd.Model):
+    __tablename__ = 'registro_auditoria'
+    id = bd.Column(bd.Integer, primary_key=True)
+    id_usuario = bd.Column(bd.Integer, bd.ForeignKey('usuarios.id'), nullable=False)
+    accion = bd.Column(bd.String(100), nullable=False) # ej: 'ELIMINAR_CURSO', 'CAMBIO_ROL'
+    detalles = bd.Column(bd.JSON) # Datos adicionales del cambio
+    ip_address = bd.Column(bd.String(45))
+    timestamp = bd.Column(bd.DateTime, default=datetime.utcnow)
+
+    usuario = bd.relationship('Usuario')
+
+
+class ConfiguracionGlobal(bd.Model):
+    __tablename__ = 'configuracion_global'
+    clave = bd.Column(bd.String(50), primary_key=True)
+    valor = bd.Column(bd.Text)
+    descripcion = bd.Column(bd.String(255))
+    ultima_actualizacion = bd.Column(bd.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

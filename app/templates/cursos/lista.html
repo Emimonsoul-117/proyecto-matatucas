@@ -34,6 +34,7 @@
     {% if current_user.rol == 'estudiante' %}
     <div class="col-md-5">
         <form class="d-flex gap-2 align-items-stretch" method="post" action="{{ url_for('cursos.unirse_por_codigo') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="text" name="codigo" class="form-control form-control-lg shadow-sm text-uppercase"
                 placeholder="Unirse con código del curso" maxlength="16" autocomplete="off">
             <button type="submit" class="btn btn-success px-3 text-nowrap">

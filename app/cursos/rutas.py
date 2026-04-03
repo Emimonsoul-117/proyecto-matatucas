@@ -3,7 +3,7 @@ import secrets
 import string
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from . import cursos
 from .. import bd
 from ..modelos import (
@@ -16,8 +16,10 @@ from ..modelos import (
     Usuario,
     asegurar_fila_docente_si_falta,
     progreso_por_lecciones_completadas,
+    IntentoEjercicio,
 )
 from ..decoradores import docente_required
+from ..servicios.auditoria_servicio import registrar_accion
 
 
 def _generar_codigo_curso_unico():
@@ -114,6 +116,11 @@ def lista_cursos():
                 Curso.codigo_curso.ilike(like),
             )
         )
+    
+    # Si es estudiante, solo mostrar cursos PUBLICADOS
+    if current_user.is_authenticated and current_user.rol == 'estudiante':
+        query = query.filter_by(estado='publicado')
+        
     lista_cursos = query.all()
     necesita_commit = False
     for c in lista_cursos:
@@ -154,10 +161,14 @@ def crear_curso():
             nivel=nivel,
             id_docente=current_user.id,
             codigo_curso=_generar_codigo_curso_unico(),
+            estado='borrador' # Se inicia en borrador por defecto
         )
         bd.session.add(nuevo_curso)
         bd.session.commit()
-        flash('Curso creado exitosamente', 'exito')
+        
+        registrar_accion('CREAR_CURSO', {'id_curso': nuevo_curso.id, 'titulo': nuevo_curso.titulo})
+        
+        flash('Curso creado exitosamente. Recuerda enviarlo a revisión cuando esté listo.', 'exito')
         return redirect(url_for('cursos.lista_cursos'))
 
     return render_template('cursos/crear.html')
@@ -196,6 +207,284 @@ def ver_curso(id):
         curso=curso,
         lecciones_completadas_ids=lecciones_completadas_ids,
         inscripcion=inscripcion,
+    )
+
+
+@cursos.route('/<int:id_curso>/alumnos', methods=['GET'])
+@login_required
+@docente_required
+def ver_alumnos_curso(id_curso):
+    curso = Curso.query.get_or_404(id_curso)
+    if current_user.rol != 'administrador' and curso.id_docente != current_user.id:
+        flash('No tienes permiso para ver los alumnos de este curso.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id_curso))
+
+    q = (request.args.get('q') or '').strip()
+    total_lecciones = Leccion.query.filter_by(id_curso=id_curso).count()
+
+    inscripciones = Inscripcion.query.filter_by(id_curso=id_curso).all()
+    estudiantes = []
+    for ins in inscripciones:
+        usuario = Usuario.query.get(ins.id_estudiante)
+        if not usuario:
+            continue
+
+        if q:
+            hay = (
+                (usuario.nombre and q.lower() in usuario.nombre.lower())
+                or (usuario.email and q.lower() in usuario.email.lower())
+                or (usuario.numero_control and q.lower() in usuario.numero_control.lower())
+            )
+            if not hay:
+                continue
+
+        progreso = progreso_por_lecciones_completadas(usuario.id, id_curso)
+
+        completadas_count = LeccionCompletada.query.join(Leccion).filter(
+            LeccionCompletada.id_estudiante == usuario.id,
+            Leccion.id_curso == id_curso,
+        ).count()
+
+        intento_q = (
+            IntentoEjercicio.query
+            .join(Ejercicio, IntentoEjercicio.id_ejercicio == Ejercicio.id)
+            .join(Leccion, Ejercicio.id_leccion == Leccion.id)
+            .filter(
+                IntentoEjercicio.id_estudiante == usuario.id,
+                Leccion.id_curso == id_curso,
+            )
+        )
+
+        intentos_totales = intento_q.count()
+        correctas_totales = intento_q.filter(IntentoEjercicio.es_correcta.is_(True)).count()
+        avg_puntaje = intento_q.with_entities(func.avg(IntentoEjercicio.puntaje)).scalar() or 0.0
+
+        estudiantes.append(
+            {
+                'usuario': usuario,
+                'progreso': progreso,
+                'completadas': completadas_count,
+                'total_lecciones': total_lecciones,
+                'intentos_totales': intentos_totales,
+                'correctas_totales': correctas_totales,
+                'avg_puntaje': float(avg_puntaje),
+            }
+        )
+
+    estudiantes.sort(key=lambda x: x['progreso'], reverse=True)
+
+    return render_template(
+        'cursos/curso_alumnos.html',
+        curso=curso,
+        estudiantes=estudiantes,
+        q=q,
+    )
+
+
+@cursos.route('/<int:id_curso>/alumnos/<int:id_estudiante>', methods=['GET'])
+@login_required
+@docente_required
+def ver_alumno_curso(id_curso, id_estudiante):
+    curso = Curso.query.get_or_404(id_curso)
+    if current_user.rol != 'administrador' and curso.id_docente != current_user.id:
+        flash('No tienes permiso para ver este alumno.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id_curso))
+
+    usuario = Usuario.query.get_or_404(id_estudiante)
+    total_lecciones = Leccion.query.filter_by(id_curso=id_curso).count()
+    inscripcion = Inscripcion.query.filter_by(
+        id_estudiante=id_estudiante,
+        id_curso=id_curso,
+    ).first()
+    progreso = progreso_por_lecciones_completadas(id_estudiante, id_curso)
+
+    completadas_rows = (
+        bd.session.query(LeccionCompletada, Leccion)
+        .join(Leccion, LeccionCompletada.id_leccion == Leccion.id)
+        .filter(
+            LeccionCompletada.id_estudiante == id_estudiante,
+            Leccion.id_curso == id_curso,
+        )
+        .order_by(Leccion.orden.asc())
+        .all()
+    )
+    completadas = [
+        {
+            'leccion_id': lc.id_leccion,
+            'orden': l.orden,
+            'titulo': l.titulo,
+            'fecha_completada': lc.fecha_completada,
+        }
+        for lc, l in completadas_rows
+    ]
+
+    # Últimos intentos (para no saturar la página)
+    intentos_rows = (
+        bd.session.query(IntentoEjercicio, Ejercicio, Leccion)
+        .join(Ejercicio, IntentoEjercicio.id_ejercicio == Ejercicio.id)
+        .join(Leccion, Ejercicio.id_leccion == Leccion.id)
+        .filter(
+            IntentoEjercicio.id_estudiante == id_estudiante,
+            Leccion.id_curso == id_curso,
+        )
+        .order_by(IntentoEjercicio.fecha_intento.desc())
+        .limit(200)
+        .all()
+    )
+
+    return render_template(
+        'cursos/curso_alumno.html',
+        curso=curso,
+        usuario=usuario,
+        inscripcion=inscripcion,
+        progreso=progreso,
+        completadas=completadas,
+        total_lecciones=total_lecciones,
+        intentos_rows=intentos_rows,
+    )
+
+
+@cursos.route('/<int:id_curso>/alumnos/<int:id_estudiante>/bloquear', methods=['POST'])
+@login_required
+@docente_required
+def bloquear_alumno_curso(id_curso, id_estudiante):
+    curso = Curso.query.get_or_404(id_curso)
+    if current_user.rol != 'administrador' and curso.id_docente != current_user.id:
+        flash('No tienes permiso para esta acción.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id_curso))
+
+    ins = Inscripcion.query.filter_by(id_curso=id_curso, id_estudiante=id_estudiante).first_or_404()
+    ins.bloqueado = True
+    bd.session.commit()
+    flash('Alumno bloqueado en el curso.', 'exito')
+    return redirect(url_for('cursos.ver_alumno_curso', id_curso=id_curso, id_estudiante=id_estudiante))
+
+
+@cursos.route('/<int:id_curso>/alumnos/<int:id_estudiante>/desbloquear', methods=['POST'])
+@login_required
+@docente_required
+def desbloquear_alumno_curso(id_curso, id_estudiante):
+    curso = Curso.query.get_or_404(id_curso)
+    if current_user.rol != 'administrador' and curso.id_docente != current_user.id:
+        flash('No tienes permiso para esta acción.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id_curso))
+
+    ins = Inscripcion.query.filter_by(id_curso=id_curso, id_estudiante=id_estudiante).first_or_404()
+    ins.bloqueado = False
+    bd.session.commit()
+    flash('Alumno desbloqueado en el curso.', 'exito')
+    return redirect(url_for('cursos.ver_alumno_curso', id_curso=id_curso, id_estudiante=id_estudiante))
+
+
+@cursos.route('/<int:id_curso>/alumnos/<int:id_estudiante>/retirar', methods=['POST'])
+@login_required
+@docente_required
+def retirar_alumno_curso(id_curso, id_estudiante):
+    curso = Curso.query.get_or_404(id_curso)
+    if current_user.rol != 'administrador' and curso.id_docente != current_user.id:
+        flash('No tienes permiso para esta acción.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id_curso))
+
+    ins = Inscripcion.query.filter_by(id_curso=id_curso, id_estudiante=id_estudiante).first_or_404()
+
+    # Eliminar completadas e intentos de este curso del estudiante (para que al re-inscribir
+    # no se arrastre progreso/calificaciones previas).
+    bd.session.query(LeccionCompletada).join(
+        Leccion, LeccionCompletada.id_leccion == Leccion.id
+    ).filter(
+        LeccionCompletada.id_estudiante == id_estudiante,
+        Leccion.id_curso == id_curso,
+    ).delete(synchronize_session=False)
+
+    bd.session.query(IntentoEjercicio).join(
+        Ejercicio, IntentoEjercicio.id_ejercicio == Ejercicio.id
+    ).join(
+        Leccion, Ejercicio.id_leccion == Leccion.id
+    ).filter(
+        IntentoEjercicio.id_estudiante == id_estudiante,
+        Leccion.id_curso == id_curso,
+    ).delete(synchronize_session=False)
+
+    bd.session.delete(ins)
+    bd.session.commit()
+    flash('Inscripción retirada (progreso e intentos eliminados).', 'exito')
+    return redirect(url_for('cursos.ver_alumnos_curso', id_curso=id_curso))
+
+
+@cursos.route('/<int:id_curso>/analytics', methods=['GET'])
+@login_required
+@docente_required
+def curso_analytics(id_curso):
+    curso = Curso.query.get_or_404(id_curso)
+    if current_user.rol != 'administrador' and curso.id_docente != current_user.id:
+        flash('No tienes permiso para ver analíticas de este curso.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id_curso))
+
+    total_lecciones = Leccion.query.filter_by(id_curso=id_curso).count()
+    inscripciones = Inscripcion.query.filter_by(id_curso=id_curso).all()
+
+    estudiantes = []
+    for ins in inscripciones:
+        usuario = Usuario.query.get(ins.id_estudiante)
+        if not usuario:
+            continue
+
+        progreso = progreso_por_lecciones_completadas(usuario.id, id_curso)
+
+        intento_q = (
+            IntentoEjercicio.query
+            .join(Ejercicio, IntentoEjercicio.id_ejercicio == Ejercicio.id)
+            .join(Leccion, Ejercicio.id_leccion == Leccion.id)
+            .filter(
+                IntentoEjercicio.id_estudiante == usuario.id,
+                Leccion.id_curso == id_curso,
+            )
+        )
+
+        total_intentos = intento_q.count()
+        avg_puntaje = intento_q.with_entities(func.avg(IntentoEjercicio.puntaje)).scalar() or 0.0
+        correctas = intento_q.filter(IntentoEjercicio.es_correcta.is_(True)).count()
+
+        estudiantes.append(
+            {
+                'usuario': usuario,
+                'progreso': progreso,
+                'avg_puntaje': float(avg_puntaje),
+                'total_intentos': total_intentos,
+                'correctas': correctas,
+            }
+        )
+
+    estudiantes.sort(key=lambda x: x['progreso'], reverse=True)
+    total_estudiantes = len(estudiantes)
+
+    completados = [e for e in estudiantes if total_lecciones > 0 and e['progreso'] >= 100]
+    tasa_completitud = (len(completados) / total_estudiantes * 100) if total_estudiantes > 0 else 0.0
+
+    # Puntaje global basado en intentos
+    intentos_global_q = (
+        IntentoEjercicio.query
+        .join(Ejercicio, IntentoEjercicio.id_ejercicio == Ejercicio.id)
+        .join(Leccion, Ejercicio.id_leccion == Leccion.id)
+        .filter(Leccion.id_curso == id_curso)
+    )
+    total_intentos_global = intentos_global_q.count()
+    avg_puntaje_global = intentos_global_q.with_entities(func.avg(IntentoEjercicio.puntaje)).scalar() or 0.0
+    correctas_global = intentos_global_q.filter(IntentoEjercicio.es_correcta.is_(True)).count()
+    tasa_correcta = (correctas_global / total_intentos_global * 100) if total_intentos_global > 0 else 0.0
+
+    top = estudiantes[:5]
+
+    return render_template(
+        'cursos/curso_analytics.html',
+        curso=curso,
+        total_lecciones=total_lecciones,
+        total_estudiantes=total_estudiantes,
+        tasa_completitud=tasa_completitud,
+        tasa_correcta=tasa_correcta,
+        avg_puntaje_global=float(avg_puntaje_global),
+        estudiantes=estudiantes,
+        top=top,
     )
 
 
@@ -257,6 +546,25 @@ def nueva_leccion(id_curso):
             )
         )
         bd.session.add(leccion)
+        bd.session.commit()
+
+        # Persistir ejercicios legacy para que el endpoint de evaluación
+        # (`/leccion/<id>/ejercicios`) funcione también con el editor por secciones JSON.
+        for sec in secciones or []:
+            if sec.get('tipo') != 'ejercicio':
+                continue
+            tipo_q = sec.get('tipo_q') or 'opcion_multiple'
+            bd.session.add(
+                Ejercicio(
+                    id_leccion=leccion.id,
+                    enunciado=sec.get('pregunta') or '',
+                    tipo=tipo_q,
+                    opciones=sec.get('opciones') or {},
+                    respuesta_correcta=sec.get('respuesta') or '',
+                    dificultad=sec.get('dificultad') or 1,
+                )
+            )
+        # Guardar también los ejercicios persistidos (si hubo).
         bd.session.commit()
 
         flash('Lección agregada exitosamente.', 'exito')
@@ -349,6 +657,9 @@ def ver_leccion(id):
         if not inscripcion:
             flash('Debes inscribirte al curso para ver esta lección.', 'peligro')
             return redirect(url_for('cursos.ver_curso', id=leccion.id_curso))
+        if getattr(inscripcion, 'bloqueado', False):
+            flash('Tu acceso a este curso fue bloqueado por el docente.', 'peligro')
+            return redirect(url_for('cursos.ver_curso', id=leccion.id_curso))
 
         # Verificar si ya está completada
         completada = LeccionCompletada.query.filter_by(
@@ -356,12 +667,51 @@ def ver_leccion(id):
             id_leccion=id
         ).first() is not None
 
-        # Determinar si hay secciones de video
-        secciones = leccion.secciones or []
-        tiene_video = any(s.get('tipo') == 'video' for s in secciones)
+        # Bloqueo por secuencia:
+        # Si el estudiante NO completó la lección actual y existen lecciones anteriores,
+        # entonces debe haber completado todas las anteriores por `orden`.
+        if not completada:
+            prev_count = Leccion.query.filter(
+                Leccion.id_curso == leccion.id_curso,
+                Leccion.orden < leccion.orden,
+            ).count()
+            if prev_count > 0:
+                prev_done = LeccionCompletada.query.join(Leccion).filter(
+                    LeccionCompletada.id_estudiante == current_user.id,
+                    Leccion.id_curso == leccion.id_curso,
+                    Leccion.orden < leccion.orden,
+                ).count()
 
-        # Auto-completar solo si NO hay video (el video se completa desde el frontend)
-        if not completada and not tiene_video:
+                if prev_done < prev_count:
+                    flash('Primero completa las lecciones anteriores para avanzar en el curso.', 'advertencia')
+
+                    # Redirigir a la primera lección incompleta
+                    completadas_ids = (
+                        LeccionCompletada.query.join(Leccion)
+                        .filter(
+                            LeccionCompletada.id_estudiante == current_user.id,
+                            Leccion.id_curso == leccion.id_curso,
+                        )
+                        .with_entities(LeccionCompletada.id_leccion)
+                        .all()
+                    )
+                    completadas_ids_set = {x[0] for x in completadas_ids}
+                    lecciones_orden = Leccion.query.filter_by(id_curso=leccion.id_curso).order_by(Leccion.orden.asc()).all()
+                    for l in lecciones_orden:
+                        if l.id not in completadas_ids_set:
+                            return redirect(url_for('cursos.ver_leccion', id=l.id))
+
+                    return redirect(url_for('cursos.ver_curso', id=leccion.id_curso))
+
+        # Determinar si hay secciones de video/ejercicios (incluye legacy).
+        secciones_base = leccion.secciones or []
+        tiene_video = any(s.get('tipo') == 'video' for s in secciones_base) or bool(leccion.videos)
+        tiene_ejercicio = any(s.get('tipo') == 'ejercicio' for s in secciones_base) or bool(leccion.ejercicios)
+
+        # Auto-completar solo si NO hay video y NO hay ejercicios.
+        # - Video se completa desde el frontend (YouTube) vía `api_auto_completar`.
+        # - Ejercicios se completan pasando `hacer_ejercicios` (persistiendo intentos).
+        if not completada and not tiene_video and not tiene_ejercicio:
             resultado = _marcar_como_completada(current_user.id, id, leccion.id_curso)
             if resultado:
                 completada = True
@@ -411,12 +761,22 @@ def api_auto_completar(id):
         return jsonify({'error': 'Solo estudiantes'}), 403
 
     leccion = Leccion.query.get_or_404(id)
+
+    # Si la lección tiene ejercicios, no se completa solo por terminar el video.
+    # El estudiante debe resolverlos en el endpoint de evaluación.
+    if current_user.rol == 'estudiante' and leccion.ejercicios:
+        return jsonify({
+            'status': 'requiere_ejercicios',
+            'message': 'Esta lección requiere resolver los ejercicios para completarse.',
+        })
     inscripcion = Inscripcion.query.filter_by(
         id_estudiante=current_user.id,
         id_curso=leccion.id_curso
     ).first()
     if not inscripcion:
         return jsonify({'error': 'No inscrito'}), 403
+    if getattr(inscripcion, 'bloqueado', False):
+        return jsonify({'error': 'Acceso bloqueado'}), 403
 
     resultado = _marcar_como_completada(current_user.id, id, leccion.id_curso)
 
@@ -441,10 +801,14 @@ def completar_leccion(id):
         return jsonify({'error': 'Solo estudiantes pueden marcar lecciones.'}), 403
 
     leccion = Leccion.query.get_or_404(id)
-    Inscripcion.query.filter_by(
+    inscripcion = Inscripcion.query.filter_by(
         id_estudiante=current_user.id,
         id_curso=leccion.id_curso
     ).first_or_404()
+
+    if getattr(inscripcion, 'bloqueado', False):
+        flash('Tu acceso fue bloqueado por el docente.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=leccion.id_curso))
 
     resultado = _marcar_como_completada(current_user.id, id, leccion.id_curso)
 
@@ -469,6 +833,18 @@ def hacer_ejercicios(id_leccion):
     leccion = Leccion.query.get_or_404(id_leccion)
     ejercicios = leccion.ejercicios
 
+    if current_user.rol == 'estudiante':
+        inscripcion = Inscripcion.query.filter_by(
+            id_estudiante=current_user.id,
+            id_curso=leccion.id_curso,
+        ).first()
+        if not inscripcion:
+            flash('Debes inscribirte al curso para resolver estos ejercicios.', 'peligro')
+            return redirect(url_for('cursos.ver_curso', id=leccion.id_curso))
+        if getattr(inscripcion, 'bloqueado', False):
+            flash('Tu acceso a este curso fue bloqueado por el docente.', 'peligro')
+            return redirect(url_for('cursos.ver_curso', id=leccion.id_curso))
+
     if not ejercicios:
         flash('Esta lección aún no tiene ejercicios.', 'info')
         return redirect(url_for('cursos.ver_leccion', id=id_leccion))
@@ -477,36 +853,70 @@ def hacer_ejercicios(id_leccion):
     resultados = None
 
     if request.method == 'POST':
+        # Guardar intentos con el mismo número de intento para todos los ejercicios de esta lección.
+        intento_num = (
+            IntentoEjercicio.query.join(Ejercicio)
+            .filter(
+                IntentoEjercicio.id_estudiante == current_user.id,
+                Ejercicio.id_leccion == id_leccion,
+            )
+            .with_entities(func.max(IntentoEjercicio.intento_num))
+            .scalar()
+        ) or 0
+        intento_num += 1
+
         correctas = 0
         resultados = {}
+        # Persistir intentos por cada ejercicio (se hace en batch al final)
+        nuevos_intentos = []
 
         for ejercicio in ejercicios:
             respuesta_usuario = request.form.get(f'respuesta_{ejercicio.id}')
             es_correcta = False
-            if respuesta_usuario and respuesta_usuario.strip().lower() == ejercicio.respuesta_correcta.strip().lower():
+
+            if (
+                respuesta_usuario
+                and respuesta_usuario.strip().lower()
+                == (ejercicio.respuesta_correcta or '').strip().lower()
+            ):
                 correctas += 1
                 es_correcta = True
+
+            puntaje_ejercicio = 100.0 if es_correcta else 0.0
+
+            nuevos_intentos.append(
+                IntentoEjercicio(
+                    id_estudiante=current_user.id,
+                    id_ejercicio=ejercicio.id,
+                    intento_num=intento_num,
+                    respuesta_usuario=respuesta_usuario,
+                    es_correcta=es_correcta,
+                    puntaje=puntaje_ejercicio,
+                )
+            )
+
             resultados[ejercicio.id] = {
                 'respuesta': respuesta_usuario,
                 'correcta': es_correcta,
-                'solucion': ejercicio.respuesta_correcta
+                'solucion': ejercicio.respuesta_correcta,
             }
+
+        bd.session.add_all(nuevos_intentos)
+        bd.session.commit()
 
         puntaje = int((correctas / len(ejercicios)) * 100)
 
         if puntaje >= 70:
-            from ..servicios.gamificacion_servicio import ServicioGamificacion
-            servicio_g = ServicioGamificacion()
-            puntos_ganados = correctas * 10
-            if puntaje == 100:
-                puntos_ganados += 20
-            resultado_gamificacion = servicio_g.otorgar_puntos(current_user.id, puntos_ganados)
-            flash(f'¡Felicidades! Ganaste {puntos_ganados} puntos de experiencia.', 'exito')
-            if resultado_gamificacion and resultado_gamificacion['nuevas_insignias']:
-                for ins in resultado_gamificacion['nuevas_insignias']:
-                    flash(f'¡NUEVA INSIGNIA DESBLOQUEADA: {ins.nombre}!', 'info')
+            resultado = _marcar_como_completada(current_user.id, id_leccion, leccion.id_curso)
+            if resultado:
+                flash(f'¡Lección completada! +{resultado["puntos"]} XP ganados.', 'exito')
+                if resultado['nuevas_insignias']:
+                    for nombre in resultado['nuevas_insignias']:
+                        flash(f'🏆 ¡Nueva insignia: {nombre}!', 'info')
+            else:
+                flash('Lección ya completada antes. Tus respuestas se guardaron.', 'info')
         else:
-            flash(f'Obtuviste {puntaje}/100. Inténtalo de nuevo para ganar puntos.', 'advertencia')
+            flash(f'Obtuviste {puntaje}/100. Inténtalo de nuevo.', 'advertencia')
 
     return render_template('cursos/hacer_ejercicios.html', leccion=leccion, ejercicios=ejercicios, resultados=resultados, puntaje=puntaje)
 
@@ -634,6 +1044,10 @@ def descargar_certificado(id):
         id_estudiante=current_user.id,
         id_curso=id
     ).first()
+
+    if inscripcion and getattr(inscripcion, 'bloqueado', False):
+        flash('Tu acceso fue bloqueado por el docente.', 'peligro')
+        return redirect(url_for('cursos.ver_curso', id=id))
 
     real = progreso_por_lecciones_completadas(current_user.id, id)
     if inscripcion and abs(inscripcion.progreso - real) > 0.02:

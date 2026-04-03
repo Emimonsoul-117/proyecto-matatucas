@@ -76,6 +76,21 @@ CREATE TABLE ejercicios (
     FOREIGN KEY (id_leccion) REFERENCES lecciones(id) ON DELETE CASCADE
 );
 
+-- Tabla de Intentos de Ejercicios (persistir respuestas y calificación)
+CREATE TABLE intentos_ejercicios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_estudiante INT NOT NULL,
+    id_ejercicio INT NOT NULL,
+    intento_num INT NOT NULL DEFAULT 1,
+    respuesta_usuario VARCHAR(255),
+    es_correcta BOOLEAN NOT NULL DEFAULT FALSE,
+    puntaje FLOAT NOT NULL DEFAULT 0.0,
+    fecha_intento DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_usuario) ON DELETE CASCADE,
+    FOREIGN KEY (id_ejercicio) REFERENCES ejercicios(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_intento (id_estudiante, id_ejercicio, intento_num)
+);
+
 -- Tabla de Inscripciones
 CREATE TABLE inscripciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -83,6 +98,7 @@ CREATE TABLE inscripciones (
     id_curso INT NOT NULL,
     fecha_inscripcion DATETIME DEFAULT CURRENT_TIMESTAMP,
     progreso FLOAT DEFAULT 0.0,
+    bloqueado BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (id_estudiante) REFERENCES estudiantes(id_usuario) ON DELETE CASCADE,
     FOREIGN KEY (id_curso) REFERENCES cursos(id) ON DELETE CASCADE,
     UNIQUE KEY unique_inscription (id_estudiante, id_curso)
@@ -119,7 +135,3 @@ CREATE TABLE insignias_estudiantes (
     FOREIGN KEY (id_insignia) REFERENCES insignias(id) ON DELETE CASCADE
 );
 
--- Insertar usuario administrador por defecto (password: admin123)
--- Nota: En producción, el password debe ser hasheado con werkzeug
-INSERT INTO usuarios (email, password_hash, nombre, numero_control, rol) 
-VALUES ('admin@mathai.com', 'scrypt:32768:8:1$k...hash_generado_en_codigo...', 'Administrador Sistema', 'ADM001', 'administrador');

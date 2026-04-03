@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-2 animate-fade-in">
+    <div class="bg-white rounded-4 shadow-sm border p-4 mb-4" style="min-height: 75vh;">
+        {% block admin_content %}{% endblock %}
+    </div>
+</div>
+
+<style>
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 1100px;">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="fw-bold mb-1">Detalle del alumno</h1>
+            <p class="text-muted mb-0">
+                Curso: <span class="fw-semibold">{{ curso.titulo }}</span>
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('cursos.ver_alumnos_curso', id_curso=curso.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Volver a alumnos
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="fw-bold fs-5">{{ usuario.nombre }}</div>
+                    <div class="text-muted">
+                        {{ usuario.email }} · {{ usuario.numero_control or '-' }}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold fs-5">{{ progreso|int }}%</div>
+                    <div class="text-muted small">Progreso por completadas</div>
+                </div>
+            </div>
+
+            {% if inscripcion %}
+            <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+                {% if inscripcion.bloqueado %}
+                <form method="POST" action="{{ url_for('cursos.desbloquear_alumno_curso', id_curso=curso.id, id_estudiante=usuario.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-unlock-fill me-1"></i>Desbloquear
+                    </button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('cursos.bloquear_alumno_curso', id_curso=curso.id, id_estudiante=usuario.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        <i class="bi bi-lock-fill me-1"></i>Bloquear
+                    </button>
+                </form>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('cursos.retirar_alumno_curso', id_curso=curso.id, id_estudiante=usuario.id) }}"
+                    onsubmit="return confirm('¿Retirar la inscripción y eliminar completadas/intentso de este curso?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash me-1"></i>Retirar
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="fw-bold"><i class="bi bi-check2-circle me-2 text-success"></i>Lecciones completadas</div>
+                </div>
+                <div class="card-body">
+                    {% if completadas|length == 0 %}
+                    <div class="text-muted">Aún no hay completadas.</div>
+                    {% else %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for c in completadas %}
+                        <div class="d-flex justify-content-between align-items-center border rounded-3 p-2">
+                            <div>
+                                <div class="fw-semibold">{{ c.orden }}. {{ c.titulo }}</div>
+                                <small class="text-muted">Completada: {{ c.fecha_completada.strftime('%d/%m/%Y %H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <div class="fw-bold"><i class="bi bi-lightning-charge me-2 text-primary"></i>Últimos intentos de ejercicios</div>
+                </div>
+                <div class="card-body">
+                    {% if intentos_rows|length == 0 %}
+                    <div class="text-muted">Aún no hay intentos.</div>
+                    {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Lección</th>
+                                    <th>Ejercicio</th>
+                                    <th>Respuesta</th>
+                                    <th>Correcta</th>
+                                    <th>Puntaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for intento, ejercicio, leccion in intentos_rows %}
+                                <tr>
+                                    <td class="text-nowrap">
+                                        {{ intento.fecha_intento.strftime('%d/%m/%Y %H:%M') }}
+                                    </td>
+                                    <td class="text-nowrap">
+                                        {{ leccion.orden }}. {{ leccion.titulo|truncate(30) }}
+                                    </td>
+                                    <td class="text-nowrap">{{ ejercicio.id }}</td>
+                                    <td>{{ intento.respuesta_usuario or '-' }}</td>
+                                    <td>
+                                        {% if intento.es_correcta %}
+                                        <span class="badge bg-success">Sí</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">{{ intento.puntaje|round(1, 'common') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -19,6 +19,7 @@
         {% endif %}
 
         <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             {% for ejercicio in ejercicios %}
             <div
                 class="card mb-4 shadow-sm {{ 'border-success' if resultados and resultados[ejercicio.id]['correcta'] else ('border-danger' if resultados else '') }}">
