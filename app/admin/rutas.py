@@ -32,9 +32,6 @@ def dashboard():
     total_cursos = Curso.query.count()
     total_inscripciones = Inscripcion.query.count()
     
-    # Cursos en revisión
-    cursos_pendientes = Curso.query.filter_by(estado='revision').all()
-    
     # Últimas acciones de auditoría
     ultimas_acciones = RegistroAuditoria.query.order_by(RegistroAuditoria.timestamp.desc()).limit(10).all()
     
@@ -43,7 +40,6 @@ def dashboard():
                            total_docentes=total_docentes,
                            total_cursos=total_cursos,
                            total_inscripciones=total_inscripciones,
-                           cursos_pendientes=cursos_pendientes,
                            ultimas_acciones=ultimas_acciones)
 
 @admin.route('/usuarios')
@@ -255,12 +251,7 @@ def lista_auditoria():
     registros = RegistroAuditoria.query.order_by(RegistroAuditoria.timestamp.desc()).all()
     return render_template('admin/lista_auditoria.html', registros=registros)
 
-@admin.route('/cursos/revision')
-@login_required
-@admin_required
-def lista_revision_cursos():
-    cursos = Curso.query.filter_by(estado='revision').all()
-    return render_template('admin/revision_cursos.html', cursos=cursos)
+
 
 @admin.route('/metricas')
 @login_required
@@ -322,7 +313,7 @@ def cambiar_estado_curso(id):
     curso = Curso.query.get_or_404(id)
     nuevo_estado = request.form.get('estado')
     
-    if nuevo_estado in ['borrador', 'revision', 'publicado']:
+    if nuevo_estado in ['borrador', 'publicado']:
         estado_anterior = curso.estado
         curso.estado = nuevo_estado
         bd.session.commit()

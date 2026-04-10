@@ -13,6 +13,10 @@ def index():
 def dashboard():
     from ..modelos import Curso, Inscripcion, Estudiante
     
+    # Redirigir docentes a su panel dedicado
+    if current_user.rol in ('docente', 'administrador'):
+        return redirect(url_for('docente.dashboard'))
+    
     cursos_usuario = []
     
     if current_user.rol == 'estudiante':
@@ -31,10 +35,6 @@ def dashboard():
             cursos_usuario.append({'curso': curso, 'progreso': real})
         if necesita_commit:
             bd.session.commit()
-    elif current_user.rol == 'docente' or current_user.rol == 'administrador':
-        # Obtener cursos creados
-        cursos_raw = Curso.query.filter_by(id_docente=current_user.id).all()
-        cursos_usuario = [{'curso': c, 'progreso': None} for c in cursos_raw]
     
     return render_template('dashboard.html', nombre=current_user.nombre, cursos=cursos_usuario)
 

@@ -72,7 +72,7 @@ def _ensure_bloqueado_inscripciones_column(app):
                 exc,
             )
 def _ensure_estado_cursos_column(app):
-    """Añade la columna estado a cursos si falta (necesario para Matatucas Pro)."""
+    """Asegura columna estado en cursos (sin 'revision' — publicación directa)."""
     with app.app_context():
         try:
             with bd.engine.begin() as conn:
@@ -89,11 +89,44 @@ def _ensure_estado_cursos_column(app):
                 if n == 0:
                     conn.execute(
                         text(
-                            "ALTER TABLE cursos ADD COLUMN estado ENUM('borrador', 'revision', 'publicado') NOT NULL DEFAULT 'borrador' AFTER fecha_creacion"
+                            "ALTER TABLE cursos ADD COLUMN estado ENUM('borrador', 'publicado') NOT NULL DEFAULT 'borrador' AFTER fecha_creacion"
+                        )
+                    )
+                else:
+                    # Migrar cursos en 'revision' a 'borrador' y actualizar el ENUM
+                    conn.execute(text("UPDATE cursos SET estado = 'borrador' WHERE estado = 'revision'"))
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos MODIFY COLUMN estado ENUM('borrador', 'publicado') NOT NULL DEFAULT 'borrador'"
                         )
                     )
         except Exception as exc:
             app.logger.warning("No se pudo asegurar la columna cursos.estado: %s", exc)
+
+
+def _ensure_visibilidad_cursos_column(app):
+    """Añade la columna visibilidad a cursos (global/privado)."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'cursos'
+                          AND COLUMN_NAME = 'visibilidad'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos ADD COLUMN visibilidad ENUM('global', 'privado') NOT NULL DEFAULT 'privado' AFTER estado"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning("No se pudo asegurar la columna cursos.visibilidad: %s", exc)
 
 
 def crear_app(nombre_config='por_defecto'):
@@ -109,6 +142,7 @@ def crear_app(nombre_config='por_defecto'):
 
     _ensure_bloqueado_inscripciones_column(app)
     _ensure_estado_cursos_column(app)
+    _ensure_visibilidad_cursos_column(app)
 
     # Crea tablas nuevas faltantes (no altera tablas existentes).
     # Esto permite que nuevas entidades (p. ej. intentos_ejercicios) aparezcan
@@ -129,6 +163,9 @@ def crear_app(nombre_config='por_defecto'):
 
     from .admin import admin as admin_blueprint
     app.register_blueprint(admin_blueprint, url_prefix='/admin')
+
+    from .docente import docente as docente_blueprint
+    app.register_blueprint(docente_blueprint, url_prefix='/docente')
 
     # Context processor: inyectar configuración del usuario en todos los templates
     @app.context_processor

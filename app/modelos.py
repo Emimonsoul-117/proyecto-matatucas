@@ -13,6 +13,10 @@ class Usuario(UserMixin, bd.Model):
     rol = bd.Column(bd.Enum('administrador', 'docente', 'estudiante'), nullable=False)
     fecha_registro = bd.Column(bd.DateTime, default=datetime.utcnow)
 
+    # Relaciones inversas
+    perfil_estudiante = bd.relationship('Estudiante', backref='usuario', uselist=False, lazy=True)
+    perfil_docente = bd.relationship('Docente', backref='usuario', uselist=False, lazy=True)
+
     @property
     def nombre_usuario(self):
         """Devuelve el nombre para mostrar en la interfaz."""
@@ -60,6 +64,9 @@ class Docente(bd.Model):
     id_usuario = bd.Column(bd.Integer, bd.ForeignKey('usuarios.id'), primary_key=True)
     especialidad = bd.Column(bd.String(100))
 
+    # Relación a cursos del docente
+    cursos = bd.relationship('Curso', backref='docente_rel', lazy=True)
+
 
 def asegurar_fila_docente_si_falta(usuario):
     """Crea docentes.id_usuario si el usuario es docente/admin y falta la fila (evita error FK al crear cursos)."""
@@ -80,11 +87,21 @@ class Curso(bd.Model):
     nivel = bd.Column(bd.Enum('basico', 'intermedio', 'avanzado'), nullable=False)
     id_docente = bd.Column(bd.Integer, bd.ForeignKey('docentes.id_usuario'))
     fecha_creacion = bd.Column(bd.DateTime, default=datetime.utcnow)
-    estado = bd.Column(bd.Enum('borrador', 'revision', 'publicado'), default='borrador', nullable=False)
+    estado = bd.Column(bd.Enum('borrador', 'publicado'), default='borrador', nullable=False)
+    visibilidad = bd.Column(bd.Enum('global', 'privado'), default='privado', nullable=False)
     
     # Relaciones
-    lecciones = bd.relationship('Leccion', backref='curso', lazy=True)
-    inscripciones = bd.relationship('Inscripcion', backref='curso', lazy=True)
+    lecciones = bd.relationship('Leccion', backref='curso', lazy=True, cascade='all, delete-orphan')
+    inscripciones = bd.relationship('Inscripcion', backref='curso', lazy=True, cascade='all, delete-orphan')
+
+    # Relación al usuario docente (acceso directo al nombre sin query extra)
+    usuario_docente = bd.relationship(
+        'Usuario',
+        primaryjoin='Curso.id_docente == Usuario.id',
+        foreign_keys='Curso.id_docente',
+        viewonly=True,
+        lazy=True,
+    )
 
 class Leccion(bd.Model):
     __tablename__ = 'lecciones'
@@ -96,8 +113,8 @@ class Leccion(bd.Model):
     secciones = bd.Column(bd.JSON, nullable=True)  # New: list of section blocks
     # secciones format: [{"tipo": "teoria"|"video"|"ejercicio", ...}, ...]
 
-    ejercicios = bd.relationship('Ejercicio', backref='leccion', lazy=True)
-    videos = bd.relationship('Video', backref='leccion', lazy=True)
+    ejercicios = bd.relationship('Ejercicio', backref='leccion', lazy=True, cascade='all, delete-orphan')
+    videos = bd.relationship('Video', backref='leccion', lazy=True, cascade='all, delete-orphan')
 
 class Video(bd.Model):
     __tablename__ = 'videos'
@@ -156,6 +173,16 @@ class Inscripcion(bd.Model):
     fecha_inscripcion = bd.Column(bd.DateTime, default=datetime.utcnow)
     progreso = bd.Column(bd.Float, default=0.0)
     bloqueado = bd.Column(bd.Boolean, default=False, nullable=False)
+
+    # Relaciones para acceso directo
+    estudiante = bd.relationship('Estudiante', backref=bd.backref('inscripciones_rel', lazy=True))
+    usuario = bd.relationship(
+        'Usuario',
+        primaryjoin='Inscripcion.id_estudiante == Usuario.id',
+        foreign_keys='Inscripcion.id_estudiante',
+        viewonly=True,
+        lazy=True,
+    )
 
 class Insignia(bd.Model):
     __tablename__ = 'insignias'

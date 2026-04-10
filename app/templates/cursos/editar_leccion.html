@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Quill.js CSS -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    .seccion-bloque {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        margin-bottom: 1.2rem;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+    }
+
+    .seccion-bloque:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .seccion-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .sec-teoria .seccion-header {
+        background: linear-gradient(90deg, #eff6ff, #fff);
+        color: #2563eb;
+    }
+
+    .sec-video .seccion-header {
+        background: linear-gradient(90deg, #fff1f2, #fff);
+        color: #e11d48;
+    }
+
+    .sec-ejercicio .seccion-header {
+        background: linear-gradient(90deg, #f0fdf4, #fff);
+        color: #16a34a;
+    }
+
+    .sec-recurso .seccion-header {
+        background: linear-gradient(90deg, #ecfeff, #fff);
+        color: #0891b2;
+    }
+
+    .seccion-body { padding: 16px; }
+
+    .ql-editor {
+        min-height: 140px;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+
+    .btn-add-sec {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        padding: 6px 16px;
+        font-weight: 600;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-add-sec:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-del-sec {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 6px;
+        transition: color 0.15s;
+        margin-left: auto;
+    }
+
+    .btn-del-sec:hover { color: #ef4444; }
+
+    .drop-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        background: #f8fafc;
+    }
+
+    .yt-preview {
+        width: 100%;
+        border-radius: 8px;
+        margin-top: 10px;
+        background: #000;
+        aspect-ratio: 16/9;
+    }
+
+    .seccion-mover { cursor: grab; color: #cbd5e1; font-size: 1.2rem; }
+
+    .form-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        padding: 2rem;
+    }
+
+    .opciones-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .tipo-badge { font-size: 1rem; }
+</style>
+
+<div class="container py-4" style="max-width:860px;">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('cursos.lista_cursos') }}">Cursos</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('cursos.ver_curso', id=curso.id) }}">{{ curso.titulo }}</a></li>
+                <li class="breadcrumb-item active">Editar Lección</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-warning"></i>Editar Lección</h2>
+        <p class="text-muted mt-1">Modifica las secciones de teoría, video o ejercicios.</p>
+    </div>
+
+    <form method="POST" id="formLeccion">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-card mb-4">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Título de la Lección</label>
+                    <input type="text" class="form-control form-control-lg" name="titulo" required
+                        value="{{ leccion.titulo }}" placeholder="Título de la lección">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Número de Orden</label>
+                    <input type="number" class="form-control form-control-lg" name="orden"
+                        value="{{ leccion.orden }}" min="1" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zona de secciones -->
+        <div id="secciones-container"></div>
+
+        <div class="drop-zone" id="dropZone" style="{% if secciones_editor %}display:none;{% endif %}">
+            <i class="bi bi-plus-circle fs-3 d-block mb-2 text-primary"></i>
+            Agrega una sección para comenzar
+        </div>
+
+        <!-- Botones agregar sección -->
+        <div class="d-flex gap-2 flex-wrap mb-4">
+            <button type="button" class="btn btn-add-sec btn-outline-primary" onclick="agregarSeccion('teoria')">
+                <i class="bi bi-file-text"></i> Agregar Teoría
+            </button>
+            <button type="button" class="btn btn-add-sec btn-outline-danger" onclick="agregarSeccion('video')">
+                <i class="bi bi-play-circle"></i> Agregar Video
+            </button>
+            <button type="button" class="btn btn-add-sec btn-outline-success" onclick="agregarSeccion('ejercicio')">
+                <i class="bi bi-pencil-square"></i> Agregar Ejercicio
+            </button>
+            <button type="button" class="btn btn-add-sec btn-outline-info" onclick="agregarSeccion('recurso')">
+                <i class="bi bi-paperclip"></i> Agregar Recurso
+            </button>
+        </div>
+
+        <!-- Campo oculto para JSON -->
+        <input type="hidden" name="secciones_json" id="secciones_json">
+
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg px-5" onclick="prepararEnvio()">
+                <i class="bi bi-check-lg me-1"></i> Guardar Cambios
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Quill.js JS -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+    let secciones = [];
+    let quillInstances = {};
+    let idCounter = 0;
+
+    const QUILL_TOOLBAR = [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['blockquote', 'code-block'],
+        ['link', 'image'],
+        [{ 'align': [] }],
+        ['clean']
+    ];
+
+    function agregarSeccion(tipo, datos) {
+        const id = 'sec_' + (++idCounter);
+        const sec = { id, tipo };
+        if (datos) Object.assign(sec, datos);
+        secciones.push(sec);
+        renderSecciones();
+        document.getElementById('dropZone').style.display = 'none';
+    }
+
+    function eliminarSeccion(id) {
+        secciones = secciones.filter(s => s.id !== id);
+        delete quillInstances[id];
+        if (secciones.length === 0) document.getElementById('dropZone').style.display = '';
+        renderSecciones();
+    }
+
+    function moverSeccion(id, dir) {
+        const idx = secciones.findIndex(s => s.id === id);
+        if (dir === -1 && idx === 0) return;
+        if (dir === 1 && idx === secciones.length - 1) return;
+        const tmp = secciones[idx];
+        secciones[idx] = secciones[idx + dir];
+        secciones[idx + dir] = tmp;
+        renderSecciones();
+    }
+
+    function renderSecciones() {
+        for (const [id, quill] of Object.entries(quillInstances)) {
+            const sec = secciones.find(s => s.id === id);
+            if (sec) sec._quillContent = quill.root.innerHTML;
+        }
+
+        const container = document.getElementById('secciones-container');
+        container.innerHTML = '';
+        quillInstances = {};
+
+        secciones.forEach((sec, idx) => {
+            const div = document.createElement('div');
+            div.className = 'seccion-bloque sec-' + sec.tipo;
+            div.dataset.id = sec.id;
+
+            const iconos = { teoria: '📝', video: '🎬', ejercicio: '✏️', recurso: '🔗' };
+            const labels = { teoria: 'Teoría', video: 'Video de YouTube', ejercicio: 'Ejercicio / Quiz', recurso: 'Recurso (link)' };
+
+            div.innerHTML = `
+      <div class="seccion-header">
+        <span class="seccion-mover" title="Mover">⠿</span>
+        <span class="tipo-badge">${iconos[sec.tipo]}</span>
+        <span>${labels[sec.tipo]}</span>
+        <div class="ms-auto d-flex gap-1">
+          ${idx > 0 ? `<button type="button" class="btn-del-sec" onclick="moverSeccion('${sec.id}',-1)" title="Subir"><i class="bi bi-arrow-up"></i></button>` : ''}
+          ${idx < secciones.length - 1 ? `<button type="button" class="btn-del-sec" onclick="moverSeccion('${sec.id}',1)" title="Bajar"><i class="bi bi-arrow-down"></i></button>` : ''}
+          <button type="button" class="btn-del-sec" onclick="eliminarSeccion('${sec.id}')" title="Eliminar"><i class="bi bi-trash3"></i></button>
+        </div>
+      </div>
+      <div class="seccion-body">${cuerpoSeccion(sec)}</div>
+    `;
+            container.appendChild(div);
+
+            if (sec.tipo === 'teoria') {
+                const editor = div.querySelector('#editor_' + sec.id);
+                const quill = new Quill(editor, {
+                    theme: 'snow',
+                    modules: { toolbar: QUILL_TOOLBAR },
+                    placeholder: 'Escribe el contenido teórico...'
+                });
+                if (sec._quillContent || sec.contenido) {
+                    quill.root.innerHTML = sec._quillContent || sec.contenido || '';
+                }
+                quillInstances[sec.id] = quill;
+            }
+
+            if (sec.tipo === 'video') {
+                const urlInput = div.querySelector('.yt-url-input');
+                if (urlInput) {
+                    urlInput.value = sec._url || sec.url || '';
+                    urlInput.addEventListener('input', () => actualizarPreviewYT(sec.id, urlInput.value));
+                    if (sec._url || sec.url) actualizarPreviewYT(sec.id, sec._url || sec.url);
+                }
+            }
+
+            if (sec.tipo === 'ejercicio') {
+                if (sec._pregunta || sec.pregunta) div.querySelector('.ej-pregunta').value = sec._pregunta || sec.pregunta || '';
+                if (sec._tipo_q || sec.tipo_q) div.querySelector('.ej-tipo').value = sec._tipo_q || sec.tipo_q || 'opcion_multiple';
+                if (sec._respuesta || sec.respuesta) div.querySelector('.ej-respuesta').value = sec._respuesta || sec.respuesta || '';
+                const opciones = sec._opciones || sec.opciones || {};
+                if (opciones.a) div.querySelector('.ej-op-a').value = opciones.a;
+                if (opciones.b) div.querySelector('.ej-op-b').value = opciones.b;
+                if (opciones.c) div.querySelector('.ej-op-c').value = opciones.c;
+                if (opciones.d) div.querySelector('.ej-op-d').value = opciones.d;
+                const tipoSel = div.querySelector('.ej-tipo');
+                if (tipoSel) {
+                    toggleOpciones(sec.id, tipoSel.value);
+                    tipoSel.addEventListener('change', () => toggleOpciones(sec.id, tipoSel.value));
+                }
+            }
+
+            if (sec.tipo === 'recurso') {
+                const tituloInput = div.querySelector('.rec-titulo');
+                const urlInput = div.querySelector('.rec-url');
+                if (tituloInput && (sec.titulo || sec._titulo)) tituloInput.value = sec.titulo || sec._titulo || '';
+                if (urlInput && (sec.url || sec._url)) urlInput.value = sec.url || sec._url || '';
+            }
+        });
+    }
+
+    function cuerpoSeccion(sec) {
+        if (sec.tipo === 'teoria') {
+            return `<div id="editor_${sec.id}"></div>`;
+        }
+        if (sec.tipo === 'video') {
+            return `
+      <label class="form-label fw-semibold">URL del Video (YouTube)</label>
+      <input type="url" class="form-control yt-url-input" placeholder="https://www.youtube.com/watch?v=...">
+      <div id="preview_${sec.id}"></div>
+    `;
+        }
+        if (sec.tipo === 'ejercicio') {
+            return `
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Pregunta / Enunciado</label>
+        <textarea class="form-control ej-pregunta" rows="2" placeholder="Escribe la pregunta..."></textarea>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Tipo de Pregunta</label>
+          <select class="form-select ej-tipo" onchange="toggleOpciones('${sec.id}', this.value)">
+            <option value="opcion_multiple">Opción Múltiple</option>
+            <option value="verdadero_falso">Verdadero / Falso</option>
+            <option value="numerico">Respuesta Numérica</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Respuesta Correcta</label>
+          <input type="text" class="form-control ej-respuesta" placeholder="Ej: a  /  Verdadero  /  42">
+        </div>
+      </div>
+      <div id="opciones_${sec.id}" class="opciones-grid">
+        <input type="text" class="form-control ej-op-a" placeholder="Opción A">
+        <input type="text" class="form-control ej-op-b" placeholder="Opción B">
+        <input type="text" class="form-control ej-op-c" placeholder="Opción C">
+        <input type="text" class="form-control ej-op-d" placeholder="Opción D">
+      </div>
+    `;
+        }
+        if (sec.tipo === 'recurso') {
+            return `
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Título del Recurso</label>
+        <input type="text" class="form-control rec-titulo" placeholder="Ej: Guía de estudio" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">URL del Recurso</label>
+        <input type="url" class="form-control rec-url" placeholder="https://..." />
+      </div>
+    `;
+        }
+        return '';
+    }
+
+    function toggleOpciones(secId, tipo) {
+        const el = document.getElementById('opciones_' + secId);
+        if (el) el.style.display = tipo === 'opcion_multiple' ? 'grid' : 'none';
+    }
+
+    function actualizarPreviewYT(secId, url) {
+        const preview = document.getElementById('preview_' + secId);
+        if (!preview) return;
+        let videoId = '';
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes('youtube.com')) videoId = u.searchParams.get('v');
+            else if (u.hostname.includes('youtu.be')) videoId = u.pathname.slice(1);
+        } catch { return; }
+        if (!videoId) { preview.innerHTML = ''; return; }
+        preview.innerHTML = `<iframe class="yt-preview" src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
+    }
+
+    function recopilarDatosSecciones() {
+        return secciones.map((sec, idx) => {
+            const bloque = { tipo: sec.tipo, orden: idx + 1 };
+            if (sec.tipo === 'teoria') {
+                const quill = quillInstances[sec.id];
+                bloque.contenido = quill ? quill.root.innerHTML : (sec._quillContent || sec.contenido || '');
+            }
+            if (sec.tipo === 'video') {
+                const el = document.querySelector(`[data-id="${sec.id}"] .yt-url-input`);
+                bloque.url = el ? el.value.trim() : '';
+                bloque.titulo = 'Video de la Lección';
+            }
+            if (sec.tipo === 'ejercicio') {
+                const q = s => document.querySelector(`[data-id="${sec.id}"] .ej-${s}`);
+                const tipoQ = q('tipo') ? q('tipo').value : 'opcion_multiple';
+                bloque.pregunta = q('pregunta') ? q('pregunta').value : '';
+                bloque.tipo_q = tipoQ;
+                bloque.respuesta = q('respuesta') ? q('respuesta').value.trim() : '';
+                if (tipoQ === 'opcion_multiple') {
+                    bloque.opciones = {
+                        a: q('op-a') ? q('op-a').value : '',
+                        b: q('op-b') ? q('op-b').value : '',
+                        c: q('op-c') ? q('op-c').value : '',
+                        d: q('op-d') ? q('op-d').value : ''
+                    };
+                }
+            }
+            if (sec.tipo === 'recurso') {
+                const cont = document.querySelector(`[data-id="${sec.id}"]`);
+                const tituloInput = cont ? cont.querySelector('.rec-titulo') : null;
+                const urlInput = cont ? cont.querySelector('.rec-url') : null;
+                bloque.titulo = tituloInput ? tituloInput.value.trim() : '';
+                bloque.url = urlInput ? urlInput.value.trim() : '';
+            }
+            return bloque;
+        });
+    }
+
+    function prepararEnvio() {
+        const datos = recopilarDatosSecciones();
+        document.getElementById('secciones_json').value = JSON.stringify(datos);
+    }
+
+    // Pre-cargar secciones existentes
+    const seccionesIniciales = {{ secciones_editor | tojson | safe }};
+    if (seccionesIniciales && seccionesIniciales.length > 0) {
+        seccionesIniciales.forEach(sec => {
+            agregarSeccion(sec.tipo, sec);
+        });
+    }
+
+    document.getElementById('formLeccion').addEventListener('submit', function () {
+        prepararEnvio();
+    });
+</script>
+{% endblock %}

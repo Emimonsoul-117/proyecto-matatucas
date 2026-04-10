@@ -3,7 +3,7 @@
 {% block content %}
 <style>
     .curso-hero {
-        background: linear-gradient(135deg, #e0a5dc 0%, #f089da 100%);
+        background: linear-gradient(135deg, #003366 0%, #1a5276 60%, #2980b9 100%);
         border-radius: 20px;
         color: #fff;
         padding: 3rem;
@@ -35,6 +35,30 @@
         backdrop-filter: blur(4px);
         text-transform: capitalize;
     }
+
+    .estado-hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 14px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+    .estado-hero-badge.borrador { background: rgba(254, 243, 199, 0.9); color: #92400e; }
+    .estado-hero-badge.publicado { background: rgba(209, 250, 229, 0.9); color: #065f46; }
+
+    .vis-hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 14px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+    .vis-hero-badge.global { background: rgba(224, 242, 254, 0.9); color: #0369a1; }
+    .vis-hero-badge.privado { background: rgba(243, 232, 255, 0.9); color: #7c3aed; }
 
     .progreso-card {
         background: rgba(255, 255, 255, 0.12);
@@ -103,20 +127,9 @@
         gap: 3px;
     }
 
-    .tipo-chip.teoria {
-        background: #eef2ff;
-        color: #4f46e5;
-    }
-
-    .tipo-chip.video {
-        background: #fff1f2;
-        color: #e11d48;
-    }
-
-    .tipo-chip.ejercicio {
-        background: #f0fdf4;
-        color: #16a34a;
-    }
+    .tipo-chip.teoria { background: #eef2ff; color: #4f46e5; }
+    .tipo-chip.video { background: #fff1f2; color: #e11d48; }
+    .tipo-chip.ejercicio { background: #f0fdf4; color: #16a34a; }
 
     .info-card {
         background: #fff;
@@ -134,8 +147,13 @@
         border-bottom: 1px solid #f8fafc;
     }
 
-    .info-row:last-child {
-        border-bottom: none;
+    .info-row:last-child { border-bottom: none; }
+
+    .action-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 12px;
     }
 </style>
 
@@ -147,28 +165,70 @@
             <div class="col-lg-8">
                 <div class="d-flex gap-2 mb-2 flex-wrap">
                     <span class="nivel-badge">
-                        {% if curso.nivel == 'basico' %}🟢{% elif curso.nivel == 'intermedio' %}🟡{% else %}🔴{% endif
-                        %}
+                        {% if curso.nivel == 'basico' %}🟢{% elif curso.nivel == 'intermedio' %}🟡{% else %}🔴{% endif %}
                         {{ curso.nivel | capitalize }}
                     </span>
+                    {% if current_user.id == curso.id_docente or current_user.rol == 'administrador' %}
+                    <span class="estado-hero-badge {{ curso.estado }}">
+                        {% if curso.estado == 'borrador' %}📝 Borrador{% else %}✅ Publicado{% endif %}
+                    </span>
+                    <span class="vis-hero-badge {{ curso.visibilidad }}">
+                        {% if curso.visibilidad == 'global' %}🌐 Global{% else %}🔒 Privado{% endif %}
+                    </span>
+                    {% endif %}
                 </div>
                 <h1 class="display-5 fw-bold mb-2">{{ curso.titulo }}</h1>
                 <p class="opacity-75 mb-3">{{ curso.descripcion }}</p>
 
                 {% if current_user.id == curso.id_docente or current_user.rol == 'administrador' %}
-                <div class="d-flex gap-2 flex-wrap">
+                <!-- Acciones principales del docente -->
+                <div class="action-group">
                     <a class="btn btn-light btn-sm" href="{{ url_for('cursos.editar_curso', id=curso.id) }}">
-                        <i class="bi bi-pencil me-1"></i>Editar Curso
+                        <i class="bi bi-pencil me-1"></i>Editar
                     </a>
                     <a class="btn btn-success btn-sm" href="{{ url_for('cursos.nueva_leccion', id_curso=curso.id) }}">
-                        <i class="bi bi-plus-lg me-1"></i>Agregar Lección
+                        <i class="bi bi-plus-lg me-1"></i>Nueva Lección
                     </a>
                     <a class="btn btn-primary btn-sm" href="{{ url_for('cursos.ver_alumnos_curso', id_curso=curso.id) }}">
-                        <i class="bi bi-people me-1"></i>Ver alumnos
+                        <i class="bi bi-people me-1"></i>Alumnos
                     </a>
-                    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('cursos.curso_analytics', id_curso=curso.id) }}">
+                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('cursos.curso_analytics', id_curso=curso.id) }}">
                         <i class="bi bi-graph-up me-1"></i>Analíticas
                     </a>
+                </div>
+
+                <!-- Acciones secundarias -->
+                <div class="action-group mt-2">
+                    {% if curso.estado == 'borrador' %}
+                    <form action="{{ url_for('cursos.publicar_curso', id=curso.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-warning btn-sm">
+                            <i class="bi bi-megaphone me-1"></i>Publicar Curso
+                        </button>
+                    </form>
+                    {% else %}
+                    <form action="{{ url_for('cursos.despublicar_curso', id=curso.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-pause-circle me-1"></i>Despublicar
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <form action="{{ url_for('cursos.duplicar_curso', id=curso.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-copy me-1"></i>Duplicar Curso
+                        </button>
+                    </form>
+
+                    <form action="{{ url_for('cursos.eliminar_curso', id=curso.id) }}" method="POST" class="d-inline"
+                          onsubmit="return confirm('¿Estás seguro de que deseas eliminar este curso? Esta acción no se puede deshacer.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i>Eliminar
+                        </button>
+                    </form>
                 </div>
                 {% endif %}
             </div>
@@ -208,7 +268,7 @@
                 {% endif %}
                 {% else %}
                 <form action="{{ url_for('cursos.inscribir_curso', id=curso.id) }}" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-light btn-lg w-100 fw-bold">
                         <i class="bi bi-mortarboard me-2"></i>Inscribirme al Curso
                     </button>
@@ -226,48 +286,56 @@
 
             {% for leccion in curso.lecciones | sort(attribute='orden') %}
             {% set esta_completada = leccion.id in lecciones_completadas_ids %}
-            <a href="{{ url_for('cursos.ver_leccion', id=leccion.id) }}"
-                class="leccion-item {{ 'completada-item' if esta_completada else '' }}">
-                <div class="leccion-num">
+            <div class="d-flex align-items-center gap-2 mb-0">
+                <a href="{{ url_for('cursos.ver_leccion', id=leccion.id) }}"
+                    class="leccion-item flex-grow-1 {{ 'completada-item' if esta_completada else '' }}">
+                    <div class="leccion-num">
+                        {% if esta_completada %}
+                        <i class="bi bi-check-lg"></i>
+                        {% else %}
+                        {{ leccion.orden }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">{{ leccion.titulo }}</div>
+                        {% set secs = leccion.secciones or [] %}
+                        {% if secs %}
+                        <div class="leccion-tipos mt-1">
+                            {% if secs | selectattr('tipo', 'equalto', 'teoria') | list | length > 0 %}
+                            <span class="tipo-chip teoria">📝 Teoría</span>
+                            {% endif %}
+                            {% if secs | selectattr('tipo', 'equalto', 'video') | list | length > 0 %}
+                            <span class="tipo-chip video">🎬 Video</span>
+                            {% endif %}
+                            {% if secs | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
+                            <span class="tipo-chip ejercicio">✏️ Ejercicio</span>
+                            {% endif %}
+                        </div>
+                        {% elif leccion.contenido_teoria %}
+                        <div class="leccion-tipos mt-1">
+                            <span class="tipo-chip teoria">📝 Teoría</span>
+                        </div>
+                        {% endif %}
+                    </div>
                     {% if esta_completada %}
-                    <i class="bi bi-check-lg"></i>
+                    <span class="badge bg-success rounded-pill">✓ Completada</span>
                     {% else %}
-                    {{ leccion.orden }}
+                    <i class="bi bi-chevron-right text-muted"></i>
                     {% endif %}
-                </div>
-                <div class="flex-grow-1">
-                    <div class="fw-semibold">{{ leccion.titulo }}</div>
-                    {% set secs = leccion.secciones or [] %}
-                    {% if secs %}
-                    <div class="leccion-tipos mt-1">
-                        {% if secs | selectattr('tipo', 'equalto', 'teoria') | list | length > 0 %}
-                        <span class="tipo-chip teoria">📝 Teoría</span>
-                        {% endif %}
-                        {% if secs | selectattr('tipo', 'equalto', 'video') | list | length > 0 %}
-                        <span class="tipo-chip video">🎬 Video</span>
-                        {% endif %}
-                        {% if secs | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
-                        <span class="tipo-chip ejercicio">✏️ Ejercicio</span>
-                        {% endif %}
-                    </div>
-                    {% elif leccion.contenido_teoria %}
-                    <div class="leccion-tipos mt-1">
-                        <span class="tipo-chip teoria">📝 Teoría</span>
-                    </div>
-                    {% endif %}
-                </div>
-                {% if esta_completada %}
-                <span class="badge bg-success rounded-pill">✓ Completada</span>
-                {% else %}
-                <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+                {% if current_user.id == curso.id_docente or current_user.rol == 'administrador' %}
+                <a href="{{ url_for('cursos.editar_leccion', id_curso=curso.id, id_leccion=leccion.id) }}"
+                   class="btn btn-sm btn-outline-secondary" title="Editar lección"
+                   style="border-radius: 10px; height: 36px; width: 36px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
-            </a>
+            </div>
             {% else %}
             <div class="alert alert-info rounded-3">
                 <i class="bi bi-info-circle me-2"></i>Aún no hay lecciones en este curso.
                 {% if current_user.id == curso.id_docente or current_user.rol == 'administrador' %}
-                <a href="{{ url_for('cursos.nueva_leccion', id_curso=curso.id) }}" class="alert-link ms-2">Agregar
-                    primera lección →</a>
+                <a href="{{ url_for('cursos.nueva_leccion', id_curso=curso.id) }}" class="alert-link ms-2">Agregar primera lección →</a>
                 {% endif %}
             </div>
             {% endfor %}
@@ -299,6 +367,16 @@
                     <i class="bi bi-calendar text-muted"></i>
                     <span>Creado: {{ curso.fecha_creacion.strftime('%d/%m/%Y') }}</span>
                 </div>
+                {% if current_user.id == curso.id_docente or current_user.rol == 'administrador' %}
+                <div class="info-row">
+                    <i class="bi bi-eye text-primary"></i>
+                    <span>Visibilidad: <strong>{% if curso.visibilidad == 'global' %}🌐 Global{% else %}🔒 Privado{% endif %}</strong></span>
+                </div>
+                <div class="info-row">
+                    <i class="bi bi-flag text-success"></i>
+                    <span>Estado: <strong>{% if curso.estado == 'borrador' %}📝 Borrador{% else %}✅ Publicado{% endif %}</strong></span>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
