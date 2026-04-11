@@ -30,7 +30,7 @@ def _build_auth_url(app_msal, scopes=None):
         
     auth_url = app_msal.get_authorization_request_url(
         scopes or current_app.config.get('MICROSOFT_SCOPE', ["User.Read"]),
-        redirect_uri=current_app.config.get('MICROSOFT_REDIRECT_URI')
+        redirect_uri=url_for('auth.callback', _external=True)
     )
     return auth_url
 
@@ -116,7 +116,7 @@ def callback():
     result = app_msal.acquire_token_by_authorization_code(
         code,
         scopes=current_app.config['MICROSOFT_SCOPE'],
-        redirect_uri=current_app.config['MICROSOFT_REDIRECT_URI']
+        redirect_uri=url_for('auth.callback', _external=True)
     )
 
     if 'error' in result:
