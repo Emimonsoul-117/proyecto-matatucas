@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .glass-card-premium {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 51, 102, 0.04);
+        padding: 2rem;
+    }
+    
+    .search-input-premium {
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1.5px solid #cbd5e1;
+        padding: 10px 16px;
+        font-weight: 500;
+        transition: all 0.25s ease;
+    }
+    .search-input-premium:focus {
+        background: #ffffff;
+        border-color: #1B396A;
+        box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.15);
+        outline: none;
+    }
+
+    .table-premium {
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+    .table-premium tr {
+        background: rgba(255, 255, 255, 0.6);
+        transition: all 0.2s ease;
+    }
+    .table-premium tr:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+    .table-premium th {
+        border: none;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+    }
+    .table-premium td {
+        border-top: 1px solid rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+        padding: 16px;
+    }
+    .table-premium td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.8);
+        border-top-left-radius: 14px;
+        border-bottom-left-radius: 14px;
+    }
+    .table-premium td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.8);
+        border-top-right-radius: 14px;
+        border-bottom-right-radius: 14px;
+    }
+
+    .progress-premium {
+        height: 8px;
+        border-radius: 10px;
+        background-color: rgba(226, 232, 240, 0.8);
+        overflow: hidden;
+    }
+    .progress-bar-premium {
+        border-radius: 10px;
+        background: linear-gradient(90deg, #10B981, #059669);
+    }
+</style>
+
+<div class="container py-4" style="max-width: 1100px;">
+    <!-- CABECERA -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 animate-fade-in">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Alumnos del Curso</h1>
+            <p class="text-muted mb-0">Curso: <strong class="text-dark">{{ curso.titulo }}</strong></p>
+        </div>
+        <div>
+            <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; border-color: #cbd5e1; color: #475569;">
+                <i class="bi bi-arrow-left"></i>
+                <span>Volver al Curso</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="glass-card-premium animate-slide-up">
+        
+        <!-- Barra de búsqueda y conteo -->
+        <div class="row g-3 align-items-center mb-4">
+            <div class="col-md-7">
+                <form method="GET" class="d-flex gap-2" action="{{ url_for('cursos.ver_alumnos_curso', id_curso=curso.id) }}">
+                    <input type="search" name="q" class="form-control search-input-premium w-100"
+                        placeholder="Buscar por nombre, correo o matrícula..." value="{{ q or '' }}">
+                    <button type="submit" class="btn btn-primary px-4" style="border-radius: 12px;">
+                        <i class="bi bi-search me-1"></i> Buscar
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-5 d-flex align-items-center justify-content-md-end">
+                <span class="badge bg-primary-subtle text-primary-brand border px-3 py-2 fw-semibold" style="font-size: 0.82rem;">
+                    <i class="bi bi-journal-text me-1"></i> Total Lecciones del Curso: <strong>{{ estudiantes[0].total_lecciones if estudiantes else 0 }}</strong>
+                </span>
+            </div>
+        </div>
+
+        <!-- LISTADO DE ALUMNOS -->
+        {% if estudiantes|length == 0 %}
+        <div class="text-center py-5">
+            <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
+            <h5 class="text-dark fw-bold">Sin alumnos registrados</h5>
+            <p class="text-muted mb-0">No se encontraron alumnos matriculados en este curso que coincidan con la búsqueda.</p>
+        </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-premium align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th style="width: 25%;">Progreso</th>
+                        <th class="text-center">Lecciones</th>
+                        <th class="text-center">Intentos Totales</th>
+                        <th class="text-center">Puntaje Prom.</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for est in estudiantes %}
+                    <tr>
+                        <!-- Alumno Info -->
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary text-white d-flex align-items-center justify-content-center fw-bold" 
+                                     style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #0B2545, #1B396A); font-size: 0.95rem;">
+                                    {{ est.usuario.nombre[:2].upper() }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark mb-0">{{ est.usuario.nombre }}</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                        {{ est.usuario.email }} {% if est.usuario.numero_control %}· {{ est.usuario.numero_control }}{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Progreso -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="progress progress-premium">
+                                        <div class="progress-bar progress-bar-premium" style="width: {{ est.progreso|int }}%;"></div>
+                                    </div>
+                                </div>
+                                <span class="fw-bold text-dark" style="font-size: 0.88rem; min-width: 40px; text-align: right;">{{ est.progreso|int }}%</span>
+                            </div>
+                        </td>
+                        
+                        <!-- Lecciones Completadas -->
+                        <td class="text-center fw-semibold text-dark">
+                            {{ est.completadas }} / {{ est.total_lecciones }}
+                        </td>
+                        
+                        <!-- Intentos -->
+                        <td class="text-center text-muted fw-medium">
+                            {{ est.intentos_totales }}
+                        </td>
+                        
+                        <!-- Puntaje promedio -->
+                        <td class="text-center fw-bold text-primary-brand">
+                            {{ est.avg_puntaje|round(1, 'common') }}
+                        </td>
+                        
+                        <!-- Detalle Acciones -->
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary px-3 py-2" style="border-radius: 8px;"
+                                href="{{ url_for('cursos.ver_alumno_curso', id_curso=curso.id, id_estudiante=est.usuario.id) }}">
+                                <i class="bi bi-eye-fill me-1"></i> Ver Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

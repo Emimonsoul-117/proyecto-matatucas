@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Inmersión Total */
+    body { background-color: #F1F5F9 !important; }
+    
+    .hero-header-dark {
+        background: linear-gradient(135deg, #0B2545 0%, #1B396A 100%);
+        border-bottom: 4px solid #FF7A00;
+        border-radius: 20px;
+        padding: 3rem 4rem;
+        box-shadow: 0 10px 30px rgba(11,37,69,0.3);
+        margin-bottom: -50px;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .exam-canvas {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 4rem 3rem 3rem 3rem;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+        position: relative;
+        z-index: 2;
+        margin-bottom: 4rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    /* Banners Finales (Evaluación Terminada) */
+    .score-banner {
+        border-radius: 20px;
+        padding: 3rem;
+        margin-bottom: 3rem;
+        color: #ffffff;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        text-align: center;
+        animation: dropIn 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    @keyframes dropIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    .score-banner.success { background: linear-gradient(135deg, #064e3b 0%, #10B981 100%); border-bottom: 6px solid #047857; }
+    .score-banner.warning { background: linear-gradient(135deg, #7c2d12 0%, #FF7A00 100%); border-bottom: 6px solid #c2410c; }
+
+    /* Tarjetas de Preguntas */
+    .pregunta-card {
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        margin-bottom: 2.5rem;
+        padding: 2.5rem;
+        background: #f8fafc;
+        transition: 0.3s;
+    }
+    .pregunta-card:hover { border-color: #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
+    
+    /* Estados de Resultado Visual */
+    .pregunta-card.res-correcta { border-left: 8px solid #10B981; background: #f0fdf4; border-color: #bbf7d0; }
+    .pregunta-card.res-incorrecta { border-left: 8px solid #ef4444; background: #fff1f2; border-color: #fecdd3; }
+
+    /* Typeform-style Options */
+    .opciones-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 1.5rem; }
+    
+    .opcion-bloque {
+        display: block;
+        padding: 18px 24px;
+        border: 2px solid #cbd5e1;
+        border-radius: 12px;
+        background: #ffffff;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        font-size: 1.15rem;
+        color: #334155;
+        font-weight: 600;
+        margin: 0; 
+    }
+    .opcion-bloque:hover {
+        border-color: #FF7A00 !important;
+        transform: translateX(5px);
+        background: #FFF9F5 !important;
+        color: #E05A00 !important;
+    }
+    
+    /* Input radio nativo camuflado pero visible */
+    .form-check-input { width: 1.4em; height: 1.4em; margin-right: 15px; cursor: pointer; border: 2px solid #94a3b8; margin-top: 0; }
+    .form-check-input:checked { background-color: #0B2545 !important; border-color: #0B2545 !important; }
+    
+    /* Seleccionado Visual */
+    .opcion-bloque:has(input:checked) {
+        border-color: #0B2545 !important;
+        background: #F0F4F8 !important;
+        box-shadow: inset 0 0 0 1px #0B2545 !important;
+        color: #0B2545 !important;
+    }
+
+    /* Input Abierto */
+    .form-control-exam {
+        background: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px;
+        padding: 18px 24px; font-size: 1.15rem; font-weight: 700; color: #0f172a;
+        transition: 0.2s; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .form-control-exam:focus { border-color: #0B2545; box-shadow: 0 0 0 5px rgba(11,37,69,0.1); outline: none; }
+
+    /* Consola IA Neural */
+    .ai-console {
+        background: #0f172a; border-radius: 12px; padding: 25px; margin-top: 1.5rem;
+        color: #e2e8f0; border-left: 5px solid #FF7A00; font-family: 'Inter', sans-serif;
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .ai-console .ai-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
+    .ai-console h6 { color: #38bdf8; font-weight: 800; font-size: 1.1rem; margin: 0; }
+    .ai-console ol { padding-left: 20px; }
+    .ai-console li { margin-bottom: 12px; line-height: 1.6; }
+    .ai-console .consejo-box { background: rgba(56, 189, 248, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2); margin-top: 20px; }
+
+    /* Button styles */
+    .btn-submit-exam {
+        background: #0B2545 !important;
+        border: 2px solid #0B2545 !important;
+        transition: all 0.3s !important;
+    }
+    .btn-submit-exam:hover {
+        background: #FF7A00 !important;
+        border-color: #FF7A00 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(255, 122, 0, 0.2) !important;
+    }
+
+</style>
+
+<div class="row justify-content-center pt-4">
+    <div class="col-lg-9 col-xl-8">
+
+        {% if puntaje is none %}
+        <!-- Encabezado Inmersivo (Solo se muestra mientras haces el examen) -->
+        <div class="hero-header-dark">
+            <div>
+                <h2 class="fw-bolder mb-1 text-white" style="font-size: 2.2rem;">Evaluación de Módulo</h2>
+                <span class="text-white-50 fs-5 fw-medium">{{ leccion.titulo }}</span>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-warning text-dark fs-5 py-2 px-3 fw-bolder" style="border-radius: 12px;">
+                    <i class="bi bi-ui-checks me-1"></i> {{ ejercicios|length }} Ejercicios
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="exam-canvas">
+            
+            {% if puntaje is not none %}
+            <!-- BANNER DE RESULTADOS CENTRAL -->
+            <div class="score-banner {{ 'success' if puntaje >= 70 else 'warning' }}">
+                <i class="bi bi-{{ 'trophy-fill' if puntaje >= 70 else 'exclamation-circle-fill' }} mb-3" style="font-size: 3.5rem; opacity: 0.9;"></i>
+                <h1 class="fw-bolder display-4 mb-2">{{ puntaje }} / 100</h1>
+                <p class="fs-4 fw-medium mb-4">{{ '¡Excelente! Dominas bien el tema.' if puntaje >= 70 else 'Puntaje insuficiente. Repasa la lección e inténtalo de nuevo.' }}</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('cursos.hacer_ejercicios', id_leccion=leccion.id) }}" class="btn btn-lg fw-bolder {{ 'btn-light text-success' if puntaje >= 70 else 'btn-light text-danger' }} px-4 shadow-sm">
+                        <i class="bi bi-arrow-clockwise me-2"></i> Nuevo Intento
+                    </a>
+                    <a href="{{ url_for('cursos.ver_leccion', id=leccion.id) }}" class="btn btn-lg fw-bolder text-white px-4" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.4);">
+                        <i class="bi bi-journal-text me-2"></i> Volver a Teoría
+                    </a>
+                </div>
+            </div>
+            <h4 class="fw-bolder text-dark mb-4 border-bottom pb-2">Revisión de tu Examen</h4>
+            {% endif %}
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                {% for ejercicio in ejercicios %}
+                <!-- DETERMINAR CLASE DE RESULTADO SI YA SE ENVIÓ -->
+                {% set css_res = '' %}
+                {% if resultados %}
+                    {% set css_res = 'res-correcta' if resultados[ejercicio.id]['correcta'] else 'res-incorrecta' %}
+                {% endif %}
+
+                <div class="pregunta-card {{ css_res }}">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-secondary me-3 px-3 py-2 fs-6 rounded-pill">Pregunta {{ loop.index }}</span>
+                        {% if resultados %}
+                            {% if resultados[ejercicio.id]['correcta'] %}
+                                <span class="text-success fw-bolder fs-5 ms-auto"><i class="bi bi-check-circle-fill me-1"></i> Acertada</span>
+                            {% else %}
+                                <span class="text-danger fw-bolder fs-5 ms-auto"><i class="bi bi-x-circle-fill me-1"></i> Fallida</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- ENUNCIADO -->
+                    <div class="card-text fs-4 fw-bolder text-dark mb-4" style="line-height: 1.4;">{{ ejercicio.enunciado | safe }}</div>
+
+                    <!-- OPCIÓN MÚLTIPLE -->
+                    {% if ejercicio.tipo == 'opcion_multiple' %}
+                    <div class="opciones-grid">
+                        {% for key, val in ejercicio.opciones.items() %}
+                        {% if val %}
+                        <label class="opcion-bloque shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <input class="form-check-input" type="radio" name="respuesta_{{ ejercicio.id }}"
+                                    value="{{ key }}" {{ 'checked' if resultados and resultados[ejercicio.id]['respuesta']==key else '' }}>
+                                <span><strong class="text-primary me-2">{{ key|upper }})</strong> {{ val }}</span>
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- VERDADERO O FALSO -->
+                    {% elif ejercicio.tipo == 'verdadero_falso' %}
+                    <div class="opciones-grid flex-sm-row mt-3">
+                        <label class="opcion-bloque shadow-sm flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <input class="form-check-input" type="radio" name="respuesta_{{ ejercicio.id }}"
+                                    value="Verdadero" {{ 'checked' if resultados and resultados[ejercicio.id]['respuesta']=='Verdadero' else '' }}>
+                                <span class="fw-bolder">VERDADERO</span>
+                            </div>
+                        </label>
+                        <label class="opcion-bloque shadow-sm flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <input class="form-check-input" type="radio" name="respuesta_{{ ejercicio.id }}" value="Falso"
+                                    {{ 'checked' if resultados and resultados[ejercicio.id]['respuesta']=='Falso' else '' }}>
+                                <span class="fw-bolder">FALSO</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- RESPUESTA NUMÉRICA -->
+                    {% elif ejercicio.tipo == 'numerico' %}
+                    <div class="mt-4">
+                        <input type="text" class="form-control-exam" name="respuesta_{{ ejercicio.id }}"
+                            placeholder="Escribe tu respuesta numérica..."
+                            value="{{ resultados[ejercicio.id]['respuesta'] if resultados else '' }}">
+                    </div>
+
+                    <!-- COMPLETAR TEXTO -->
+                    {% elif ejercicio.tipo == 'completar_texto' %}
+                    <div class="mt-4 completar-texto-wrap" data-ej-id="{{ ejercicio.id }}">
+                        <div class="fs-5 fw-semibold text-dark completar-texto-enunciado" data-enunciado="{{ ejercicio.enunciado | e }}"></div>
+                        <input type="hidden" name="respuesta_{{ ejercicio.id }}"
+                            id="respuesta_completar_{{ ejercicio.id }}"
+                            value="{{ resultados[ejercicio.id]['respuesta'] if resultados else '' }}">
+                    </div>
+
+                    <!-- ORDENAR PASOS -->
+                    {% elif ejercicio.tipo == 'ordenar_pasos' %}
+                    <div class="mt-4 ordenar-pasos-wrap" data-ej-id="{{ ejercicio.id }}">
+                        <p class="text-muted mb-3"><i class="bi bi-arrows-move me-1"></i> Arrastra las tarjetas para ordenar los pasos correctamente.</p>
+                        <div class="ordenar-lista d-flex flex-column gap-2" id="ordenar_lista_{{ ejercicio.id }}">
+                            {% set letras = ['a', 'b', 'c', 'd'] %}
+                            {% for letra in letras %}
+                                {% if ejercicio.opciones and ejercicio.opciones[letra] %}
+                                <div class="opcion-bloque shadow-sm ordenar-item" draggable="true" data-letra="{{ letra }}">
+                                    <i class="bi bi-grip-vertical me-2 text-muted"></i>
+                                    <strong class="text-primary me-2">{{ letra|upper }})</strong> {{ ejercicio.opciones[letra] }}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="respuesta_{{ ejercicio.id }}"
+                            id="respuesta_ordenar_{{ ejercicio.id }}"
+                            value="{{ resultados[ejercicio.id]['respuesta'] if resultados else '' }}">
+                    </div>
+
+                    <!-- RESPUESTA CORTA -->
+                    {% elif ejercicio.tipo == 'respuesta_corta' %}
+                    <div class="mt-4">
+                        <textarea class="form-control-exam" name="respuesta_{{ ejercicio.id }}" rows="3"
+                            placeholder="Escribe tu respuesta..."
+                            style="resize: vertical;">{{ resultados[ejercicio.id]['respuesta'] if resultados else '' }}</textarea>
+                    </div>
+
+                    <!-- FALLBACK -->
+                    {% else %}
+                    <div class="mt-4">
+                        <input type="text" class="form-control-exam" name="respuesta_{{ ejercicio.id }}"
+                            placeholder="Escribe tu respuesta final..."
+                            value="{{ resultados[ejercicio.id]['respuesta'] if resultados else '' }}">
+                    </div>
+                    {% endif %}
+
+                    <!-- SECCIÓN DE ANÁLISIS IA (AL MOSTRAR RESULTADOS) -->
+                    {% if resultados %}
+                    <div class="mt-4 pt-4 border-top">
+                        {% if not resultados[ejercicio.id]['correcta'] %}
+                            <div class="text-muted mb-3 fs-5">Respuesta correcta esperada: <strong class="text-dark">{{ ejercicio.respuesta_correcta }}</strong></div>
+                        {% endif %}
+
+                        <button type="button" class="btn text-white fw-bold shadow-sm" style="background: #0f172a; border-radius: 10px; padding: 10px 20px;"
+                            onclick="verProcedimiento({{ ejercicio.id }}, '{{ ejercicio.enunciado | replace("'", "\\'") | replace('\n', " ") }}', '{{ ejercicio.respuesta_correcta | replace("'", "\\'") }}', '{{ resultados[ejercicio.id]['respuesta'] | replace("'", "\\'") if resultados[ejercicio.id]['respuesta'] else '' }}')">
+                            <i class="bi bi-robot me-2 text-warning"></i> Ver solución paso a paso
+                        </button>
+
+                        <!-- Contenedor IA Dinámico -->
+                        <div id="explicacion_{{ ejercicio.id }}" style="display:none;"></div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% if puntaje is none %}
+                <div class="d-grid mt-5">
+                    <button type="submit" class="btn btn-lg btn-submit-exam text-white shadow-lg mx-auto" style="font-weight: 800; font-size: 1.3rem; padding: 18px 50px; border-radius: 14px; max-width: 400px; width: 100%;">
+                        Enviar respuestas <i class="bi bi-send-check-fill ms-2"></i>
+                    </button>
+                    <small class="text-center mt-3 text-muted fw-bold">Asegúrate de haber contestado todos los ejercicios.</small>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function verProcedimiento(ejercicioId, enunciado, respuestaCorrecta, respuestaUsuario) {
+        const contenedor = document.getElementById('explicacion_' + ejercicioId);
+
+        // Toggle visibilidad
+        if (contenedor.dataset.loaded === 'true') {
+            contenedor.style.display = contenedor.style.display === 'none' ? 'block' : 'none';
+            return;
+        }
+
+        // Loading state
+        contenedor.style.display = 'block';
+        contenedor.innerHTML = `
+            <div class="ai-console">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-grow spinner-grow-sm text-warning me-3" role="status"></div>
+                    <span class="fs-5 text-white-50">Generando explicación con IA...</span>
+                </div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch("{{ url_for('cursos.api_explicar_ejercicio') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enunciado: enunciado, respuesta_correcta: respuestaCorrecta, respuesta_usuario: respuestaUsuario })
+            });
+
+            const data = await response.json();
+
+            let pasosHtml = '';
+            if (data.pasos && data.pasos.length > 0) {
+                pasosHtml = '<ol class="mb-0">';
+                data.pasos.forEach(paso => { pasosHtml += `<li>${paso}</li>`; });
+                pasosHtml += '</ol>';
+            }
+
+            contenedor.innerHTML = `
+                <div class="ai-console">
+                    <div class="ai-header">
+                        <h6><i class="bi bi-lightbulb text-warning me-2"></i> Explicación del ejercicio</h6>
+                        <button type="button" class="btn btn-sm btn-link text-white-50" onclick="document.getElementById('explicacion_${ejercicioId}').style.display='none'"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    
+                    ${data.explicacion_breve ? `<p class="mb-4 text-white fs-5 px-3">"${data.explicacion_breve}"</p>` : ''}
+                    
+                    <div class="px-3">
+                        <strong class="text-white d-block mb-3 fs-6">Pasos de la solución:</strong>
+                        ${pasosHtml}
+                    </div>
+
+                    ${data.consejo ? `
+                    <div class="consejo-box">
+                        <strong class="text-info"><i class="bi bi-chat-quote-fill me-2"></i> Consejo:</strong>
+                        <p class="mb-0 mt-1">${data.consejo}</p>
+                    </div>` : ''}
+                </div>
+            `;
+            contenedor.dataset.loaded = 'true';
+
+            if (typeof renderizarMatematicas === 'function') {
+                renderizarMatematicas(contenedor);
+            }
+
+        } catch (error) {
+            contenedor.innerHTML = `
+                <div class="ai-console border-left border-danger">
+                    <span class="text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Error de conexión con la IA. Inténtalo de nuevo.</span>
+                </div>
+            `;
+        }
+    }
+
+    // ── Completar texto: reemplazar [respuesta] con inputs ──
+    document.querySelectorAll('.completar-texto-wrap').forEach(wrap => {
+        const ejId = wrap.dataset.ejId;
+        const enunciadoEl = wrap.querySelector('.completar-texto-enunciado');
+        const hidden = document.getElementById('respuesta_completar_' + ejId);
+        const enunciado = enunciadoEl.dataset.enunciado || '';
+        const partes = enunciado.split(/\[([^\]]*)\]/);
+        enunciadoEl.innerHTML = '';
+
+        const inputs = [];
+        for (let i = 0; i < partes.length; i++) {
+            if (i % 2 === 0) {
+                if (partes[i]) {
+                    const span = document.createElement('span');
+                    span.textContent = partes[i];
+                    enunciadoEl.appendChild(span);
+                }
+            } else {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control-exam d-inline-block mx-1';
+                input.style.width = '120px';
+                input.style.display = 'inline-block';
+                input.placeholder = '...';
+                input.addEventListener('input', () => {
+                    hidden.value = inputs.map(inp => inp.value.trim()).join('|');
+                });
+                inputs.push(input);
+                enunciadoEl.appendChild(input);
+            }
+        }
+
+        if (hidden && hidden.value) {
+            const valores = hidden.value.split('|');
+            inputs.forEach((inp, idx) => { if (valores[idx] !== undefined) inp.value = valores[idx]; });
+        }
+    });
+
+    // ── Ordenar pasos: drag & drop ──
+    function actualizarOrden(lista, hidden) {
+        const letras = [...lista.querySelectorAll('.ordenar-item')].map(el => el.dataset.letra);
+        hidden.value = letras.join(',');
+    }
+
+    document.querySelectorAll('.ordenar-pasos-wrap').forEach(wrap => {
+        const ejId = wrap.dataset.ejId;
+        const lista = document.getElementById('ordenar_lista_' + ejId);
+        const hidden = document.getElementById('respuesta_ordenar_' + ejId);
+        if (!lista || !hidden) return;
+
+        // Mezclar tarjetas al cargar
+        const items = [...lista.children];
+        for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            lista.appendChild(items[j]);
+        }
+        actualizarOrden(lista, hidden);
+
+        let arrastrado = null;
+        lista.querySelectorAll('.ordenar-item').forEach(item => {
+            item.addEventListener('dragstart', () => { arrastrado = item; item.style.opacity = '0.5'; });
+            item.addEventListener('dragend', () => { item.style.opacity = '1'; arrastrado = null; });
+            item.addEventListener('dragover', e => e.preventDefault());
+            item.addEventListener('drop', e => {
+                e.preventDefault();
+                if (arrastrado && arrastrado !== item) {
+                    const rect = item.getBoundingClientRect();
+                    const after = e.clientY > rect.top + rect.height / 2;
+                    lista.insertBefore(arrastrado, after ? item.nextSibling : item);
+                    actualizarOrden(lista, hidden);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,711 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Quill.js CSS -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    /* Desactivar transform de fade-in para que position: fixed funcione relativo al viewport */
+    .animate-fade-in {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    /* RESET PARA QUE OCUPE TODO EL ALTO BAJO EL NAVBAR */
+    .master-detail-container {
+        display: flex;
+        flex-direction: column-reverse; /* En lecciones, el módulo de lectura va ARRIBA en móviles */
+        min-height: calc(100vh - 56px);
+        margin-top: -1.5rem; /* Ajustar hacia arriba eliminando espacio vacío */
+    }
+
+    @media (min-width: 992px) {
+        .master-detail-container {
+            flex-direction: row;
+        }
+    }
+
+    /* SIDEBAR (MASTER) */
+    .sidebar-master {
+        width: 100%;
+        background: #0B2545;
+        color: #f8fafc;
+        border-right: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    @media (min-width: 992px) {
+        .sidebar-master {
+            width: 320px;
+            flex-shrink: 0;
+            position: fixed;
+            top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+            z-index: 10;
+        }
+    }
+
+    .sidebar-header {
+        padding: 1.8rem 1.5rem;
+        background: rgba(0,0,0,0.15);
+        border-bottom: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .nivel-pill {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 6px;
+        margin-bottom: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+
+    .lesson-nav-list { list-style: none; padding: 0; margin: 0; }
+    .lesson-nav-item { border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    .lesson-link {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        color: #cbd5e1;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    .lesson-link:hover { background: rgba(255,255,255,0.05); color: #ffffff; }
+
+    /* Lección ACTIVA iluminada permanentemente */
+    .lesson-link.activa {
+        background: rgba(255,255,255,0.1);
+        border-left: 4px solid #FF7A00;
+        color: #ffffff;
+    }
+
+    .lesson-num-badge {
+        width: 34px; height: 34px; border-radius: 8px;
+        background: rgba(255,255,255,0.1); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.9rem; margin-right: 15px; flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .lesson-link.completada .lesson-num-badge { background: #10B981; border-color: #A7F3D0; color: white; }
+
+    /* PANEL DERECHO (DETAIL) */
+    .content-detail {
+        flex-grow: 1;
+        background: #e2e8f0;
+        padding: 2rem 1.5rem;
+    }
+
+    @media (min-width: 992px) {
+        .content-detail {
+            padding: 1.5rem 3rem 3rem 3rem;
+            margin-left: 320px;
+        }
+    }
+
+    /* Lienzo de Documento Central */
+    .document-canvas {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+        max-width: 1000px;
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid #cbd5e1;
+    }
+
+    /* ESTILOS DE LA LECCIÓN */
+    .leccion-header-interior {
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        padding: 3.5rem 3.5rem 2.5rem 3.5rem;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 2rem;
+    }
+
+    .reading-container {
+        padding: 0 3.5rem 4rem 3.5rem;
+    }
+
+    .seccion-card {
+        background: #ffffff; border-radius: 16px; border: 2px solid #e2e8f0;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05); margin-bottom: 3rem; overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .seccion-card:hover { transform: translateY(-4px); box-shadow: 0 15px 45px rgba(0,0,0,0.1); }
+
+    .seccion-label {
+        display: flex; align-items: center; gap: 15px; padding: 18px 26px;
+        font-size: 1.15rem; font-weight: 900; letter-spacing: 0.5px;
+        color: #ffffff;
+    }
+
+    .tipo-teoria .seccion-label { background: linear-gradient(90deg, #0B2545, #1B396A); }
+    .tipo-video .seccion-label { background: linear-gradient(90deg, #EA580C, #FF7A00); }
+    .tipo-ejercicio .seccion-label { background: linear-gradient(90deg, #047857, #10B981); }
+    .tipo-recurso .seccion-label { background: linear-gradient(90deg, #0284C7, #06B6D4); }
+
+    .seccion-content { padding: 3rem; }
+
+    /* Quill y html */
+    .ql-editor { padding: 0; border: none !important; font-size: 1.05rem; line-height: 1.8; color: #0f172a; }
+    .ql-snow .ql-toolbar { display: none; }
+    .ql-snow.ql-container { border: none !important; }
+    .leccion-html { font-size: 1.05rem; line-height: 1.8; color: #1e293b; }
+    .leccion-html h1, .leccion-html h2, .leccion-html h3 { margin-top: 1.5rem; margin-bottom: 1rem; font-weight: 800; color: #0B2545; letter-spacing: -0.5px; }
+    .leccion-html blockquote { margin: 1.5rem 0; border-left: 4px solid #1B396A; padding: 1rem 1.5rem; background: #f1f5f9; color: #334155; font-style: italic; border-radius: 0 8px 8px 0; }
+    .leccion-html code { background: #f1f5f9; color: #e11d48; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.9em; }
+    .leccion-html p { margin-bottom: 1.2rem; }
+    .leccion-html img { max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; margin: 1rem 0; }
+
+    /* Video Player */
+    .yt-container { border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; background: #000; }
+    .yt-container iframe { display: block; width: 100%; aspect-ratio: 16/9; border: none; }
+    .video-status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px; margin-top: 15px; font-weight: 600; font-size: 0.95rem; border: 1px solid; }
+    .video-status.watching { background: #fefce8; color: #854d0e; border-color: #fef08a; }
+    .video-status.done { background: #f0fdf4; color: #10B981; border-color: #bbf7d0; }
+
+    /* Cuestionarios */
+    .quiz-card { background: #f8fafc; border-radius: 12px; padding: 2rem; border: 1px solid #e2e8f0; }
+    .quiz-option { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-radius: 10px; border: 2px solid #cbd5e1; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; background: #ffffff; font-size: 1rem; font-weight: 500; color: #334155; }
+    .quiz-option:hover { border-color: #FF7A00 !important; background: #FFF9F5 !important; color: #E05A00 !important; }
+    .quiz-option.correcta { border-color: #10B981 !important; background: #ECFDF5 !important; color: #047857 !important; }
+    .quiz-option.incorrecta { border-color: #EF4444 !important; background: #FEE2E2 !important; color: #991B1B !important; }
+    .quiz-letra { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; background: #e2e8f0; color: #475569; flex-shrink: 0; }
+    .quiz-option.correcta .quiz-letra { background: #10B981; color: #fff; }
+    .quiz-option.incorrecta .quiz-letra { background: #EF4444; color: #fff; }
+    .quiz-result { border-radius: 8px; padding: 16px 20px; margin-top: 16px; font-weight: 700; font-size: 1rem; border: 1px solid transparent; }
+
+    /* Notificaciones Banners */
+    .banner-completada { background: #ECFDF5; color: #047857; border: 2px solid #A7F3D0; border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.05rem; margin-bottom: 1.5rem; }
+    .banner-esperando { background: #FFF7ED; color: #C2410C; border: 2px solid #FFD8A8; border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.05rem; margin-bottom: 1.5rem; }
+
+    .toast-completada { position: fixed; bottom: 30px; right: 30px; z-index: 9999; background: #0B2545; color: #ffffff; border: 2px solid #1B396A; border-left: 6px solid #10B981; border-radius: 12px; padding: 20px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; transform: translateY(120px); opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); min-width: 320px; }
+    .toast-completada.show { transform: translateY(0); opacity: 1; }
+    
+    .sidebar-master::-webkit-scrollbar { width: 6px; }
+    .sidebar-master::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+    .sidebar-master::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+</style>
+
+{% set curso_obj = leccion.curso %}
+{% set nivel_color = '#10B981' if curso_obj.nivel == 'basico' else '#F59E0B' if curso_obj.nivel == 'intermedio' else '#3B82F6' %}
+
+<div class="master-detail-container">
+    
+    <!-- MASTER: SIDEBAR IZQUIERDO -->
+    <aside class="sidebar-master">
+        <div class="sidebar-header">
+            <a href="{{ url_for('cursos.lista_cursos') }}" class="btn btn-sm text-white fw-bold mb-4 d-inline-flex align-items-center shadow-sm" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; font-size: 0.85rem; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                <i class="bi bi-arrow-left me-2"></i> Mis Cursos
+            </a><br>
+
+            <span class="nivel-pill" style="background: rgba(255,255,255,0.1); border: 1px solid {{ nivel_color }}; color: {{ nivel_color }};">
+                <i class="bi bi-diagram-3-fill me-1"></i> Nivel {{ curso_obj.nivel }}
+            </span>
+            <h4 class="text-white fw-bolder mb-0" style="line-height: 1.3;">{{ curso_obj.titulo }}</h4>
+        </div>
+
+        <ul class="lesson-nav-list">
+            <li class="lesson-nav-item">
+                <a href="{{ url_for('cursos.ver_curso', id=curso_obj.id) }}" class="lesson-link text-white fw-bold">
+                    <div class="lesson-num-badge" style="background: transparent; border-color: transparent;"><i class="bi bi-house-door-fill text-warning fs-5"></i></div>
+                    Inicio del Curso
+                </a>
+            </li>
+
+            <!-- Lecciones Dinámicas -->
+            {% for l_loop in curso_obj.lecciones | sort(attribute='orden') %}
+                {% set esta_completada = False %}
+                {% if l_loop.orden < leccion.orden %}
+                    {% set esta_completada = True %}
+                {% elif l_loop.orden == leccion.orden and completada %}
+                    {% set esta_completada = True %}
+                {% endif %}
+                
+                {% set es_activa = (l_loop.id == leccion.id) %}
+                
+                <li class="lesson-nav-item">
+                    <a href="{{ url_for('cursos.ver_leccion', id=l_loop.id) }}" class="lesson-link {{ 'activa' if es_activa else '' }} {{ 'completada' if esta_completada and current_user.rol == 'estudiante' else '' }}">
+                        <div class="lesson-num-badge">
+                            {% if esta_completada and current_user.rol == 'estudiante' %}
+                                <i class="bi bi-check-lg"></i>
+                            {% elif es_activa %}
+                                <i class="bi bi-caret-right-fill text-warning"></i>
+                            {% else %}
+                                {{ l_loop.orden }}
+                            {% endif %}
+                        </div>
+                        <div class="pe-2">
+                            <span class="d-block fw-semibold" style="line-height: 1.35; font-size: 1.05rem;">{{ l_loop.titulo }}</span>
+                            {% if esta_completada and current_user.rol == 'estudiante' %}
+                                <span class="d-block sidebar-text-success fw-bolder" style="font-size: 0.75rem; margin-top: 5px; letter-spacing: 0.5px;"><i class="bi bi-check2-circle me-1"></i> APROBADA</span>
+                            {% elif es_activa %}
+                                <span class="d-block sidebar-text-warning fw-bolder" style="font-size: 0.75rem; margin-top: 5px; letter-spacing: 0.5px;"><i class="bi bi-play-circle me-1"></i> LECCIÓN ACTUAL</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </aside>
+
+    <!-- DETAIL: CONTENIDO DERECHO (MODO LECTURA) -->
+    <main class="content-detail">
+        <div class="document-canvas">
+            <!-- Cabecera de la Lección Específica -->
+            <div class="leccion-header-interior">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary text-white d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 45px; height: 45px; border-radius: 12px; background: #0B2545 !important;">
+                        <span class="fs-4 fw-bolder">{{ leccion.orden }}</span>
+                    </div>
+                    <span class="badge bg-light text-secondary border fw-bold px-3 py-2"><i class="bi bi-book me-1"></i> Módulo: {{ curso_obj.titulo }}</span>
+                </div>
+                <h1 class="display-6 fw-bolder mb-0 text-dark" style="line-height: 1.3;">{{ leccion.titulo }}</h1>
+            </div>
+
+        <div class="reading-container">
+
+            {% if current_user.rol == 'estudiante' %}
+                {% if completada %}
+                <div class="banner-completada">
+                    <i class="bi bi-check-circle-fill fs-4"></i>
+                    <span>¡Lección completada! Buen trabajo 🎉</span>
+                </div>
+                {% else %}
+                <div class="banner-esperando" id="bannerEsperando">
+                    <i class="bi bi-clock-history fs-4"></i>
+                    <span id="textoEsperando">
+                        {% set tiene_video = secciones | selectattr('tipo', 'equalto', 'video') | list | length > 0 %}
+                        {% set tiene_ejercicio = secciones | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
+                        {% if tiene_video and tiene_ejercicio %}Termina el video y resuelve los ejercicios para completar esta lección.
+                        {% elif tiene_video %}Termina de ver el video para completar la lección.
+                        {% elif tiene_ejercicio %}Resuelve los ejercicios para completar la lección.
+                        {% else %}Completa la lectura para avanzar.{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- RENDERIZADOR DE SECCIONES -->
+            {% for seccion in secciones %}
+
+                {# === TEORÍA === #}
+                {% if seccion.tipo == 'teoria' %}
+                <div class="seccion-card tipo-teoria">
+                    <div class="seccion-label"><i class="bi bi-file-text"></i> Contenido Teórico</div>
+                    <div class="seccion-content">
+                        <div class="leccion-html">{{ seccion.contenido | safe }}</div>
+                    </div>
+                </div>
+
+                {# === VIDEO === #}
+                {% elif seccion.tipo == 'video' %}
+                {% set loop_idx = loop.index %}
+                <div class="seccion-card tipo-video" id="seccion-video-{{ loop_idx }}">
+                    <div class="seccion-label"><i class="bi bi-play-circle-fill"></i> {{ seccion.titulo or 'Video de la Lección' }}</div>
+                    <div class="seccion-content">
+                        {% set yt_url = seccion.url %}
+                        <div class="yt-container"><div id="yt-player-{{ loop_idx }}"></div></div>
+                        <div class="video-status watching" id="video-status-{{ loop_idx }}">
+                            <i class="bi bi-eye"></i><span>Mirando el video... se completará automáticamente al terminar</span>
+                        </div>
+                        <script>
+                            window._ytVideos = window._ytVideos || [];
+                            window._ytVideos.push({ idx: {{ loop_idx }}, url: "{{ yt_url }}", leccionId: {{ leccion.id }} });
+                        </script>
+                    </div>
+                </div>
+
+                {# === EJERCICIO === #}
+                {% elif seccion.tipo == 'ejercicio' %}
+                {% set loop_idx = loop.index %}
+                <div class="seccion-card tipo-ejercicio">
+                    <div class="seccion-label"><i class="bi bi-pencil-square"></i> Cuestionario Interactivo</div>
+                    <div class="seccion-content">
+                        <div class="quiz-card" id="quiz-{{ loop_idx }}">
+                            <p class="fw-semibold mb-4" style="font-size:1.1rem; color: #0f172a;">{{ seccion.pregunta }}</p>
+
+                            {% if seccion.tipo_q == 'opcion_multiple' and seccion.opciones %}
+                                {% for letra, texto in seccion.opciones.items() %}
+                                    {% if texto %}
+                                    <div class="quiz-option" onclick="seleccionarOpcion({{ loop_idx }}, this, '{{ letra }}', '{{ seccion.respuesta }}')" data-letra="{{ letra }}">
+                                        <span class="quiz-letra">{{ letra | upper }}</span><span>{{ texto }}</span>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+
+                            {% elif seccion.tipo_q == 'verdadero_falso' %}
+                                <div class="quiz-option" onclick="seleccionarOpcion({{ loop_idx }}, this, 'Verdadero', '{{ seccion.respuesta }}')" data-letra="V">
+                                    <span class="quiz-letra">V</span><span>Verdadero</span>
+                                </div>
+                                <div class="quiz-option" onclick="seleccionarOpcion({{ loop_idx }}, this, 'Falso', '{{ seccion.respuesta }}')" data-letra="F">
+                                    <span class="quiz-letra">F</span><span>Falso</span>
+                                </div>
+
+                            {% elif seccion.tipo_q == 'numerico' %}
+                                <div class="input-group mt-2">
+                                    <input type="number" step="any" class="form-control" id="num-input-{{ loop_idx }}" placeholder="Tu respuesta numérica">
+                                    <button class="btn btn-primary" onclick="verificarNumerico({{ loop_idx }}, '{{ seccion.respuesta }}')">Verificar</button>
+                                </div>
+
+                            {% elif seccion.tipo_q == 'completar_texto' %}
+                                <div id="completar-wrap-{{ loop_idx }}" class="mt-2" data-pregunta="{{ seccion.pregunta | e }}" data-respuesta="{{ seccion.respuesta | e }}"></div>
+                                <button class="btn btn-primary mt-2" onclick="verificarCompletar({{ loop_idx }})">Verificar</button>
+
+                            {% elif seccion.tipo_q == 'ordenar_pasos' and seccion.opciones %}
+                                <div class="ordenar-inline-list d-flex flex-column gap-2 mt-2" id="ordenar-inline-{{ loop_idx }}">
+                                    {% for letra, texto in seccion.opciones.items() %}
+                                        {% if texto %}
+                                        <div class="quiz-option ordenar-inline-item" draggable="true" data-letra="{{ letra }}">
+                                            <span class="quiz-letra">{{ letra | upper }}</span><span>{{ texto }}</span>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <button class="btn btn-primary mt-2" onclick="verificarOrdenar({{ loop_idx }}, '{{ seccion.respuesta }}')">Verificar orden</button>
+
+                            {% elif seccion.tipo_q == 'respuesta_corta' %}
+                                <div class="input-group mt-2">
+                                    <input type="text" class="form-control" id="corta-input-{{ loop_idx }}" placeholder="Escribe tu respuesta">
+                                    <button class="btn btn-primary" onclick="verificarCorta({{ loop_idx }}, '{{ seccion.respuesta | e }}')">Verificar</button>
+                                </div>
+                            {% endif %}
+                            <div id="quiz-result-{{ loop_idx }}" class="quiz-result" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {# === RECURSO === #}
+                {% elif seccion.tipo == 'recurso' %}
+                <div class="seccion-card tipo-recurso">
+                    <div class="seccion-label"><i class="bi bi-paperclip"></i> Recurso Adjunto</div>
+                    <div class="seccion-content">
+                        <div class="fw-bold mb-3" style="color: #0f172a;">{{ seccion.titulo or 'Enlace Descargable / Complementario' }}</div>
+                        {% if seccion.url %}
+                            <a class="btn btn-outline-primary btn-sm fw-bold px-4" href="{{ seccion.url }}" target="_blank" rel="noopener">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Abrir Recurso
+                            </a>
+                        {% else %}
+                            <div class="text-muted small fw-semibold">Sin enlace configurado.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+            {% endfor %}
+
+            <!-- Navegación Continua y Acciones Base -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-5 pt-5 border-top" style="border-color: #cbd5e1 !important;">
+                
+                {% set prev_id = namespace(val=none) %}
+                {% set next_id = namespace(val=none) %}
+                {% set current_found = namespace(val=false) %}
+                
+                {% for l in curso_obj.lecciones | sort(attribute='orden') %}
+                    {% if current_found.val == false and l.id != leccion.id %}
+                        {% set prev_id.val = l.id %}
+                    {% endif %}
+                    {% if current_found.val == true and next_id.val == none %}
+                        {% set next_id.val = l.id %}
+                    {% endif %}
+                    {% if l.id == leccion.id %}
+                        {% set current_found.val = true %}
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Botón Anterior -->
+                <div class="mb-3 mb-md-0">
+                    {% if prev_id.val %}
+                    <a href="{{ url_for('cursos.ver_leccion', id=prev_id.val) }}" class="btn text-secondary fw-bold px-4 py-2 shadow-sm" style="background: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; transition: 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+                        <i class="bi bi-arrow-left me-2"></i> Lección Anterior
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-3 align-items-center flex-wrap justify-content-center">
+                    {% set tiene_ejercicio = secciones | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
+                    {% if current_user.rol == 'estudiante' and tiene_ejercicio and not completada %}
+                        <a href="{{ url_for('cursos.hacer_ejercicios', id_leccion=leccion.id) }}" class="btn text-white fw-bold px-4 py-2 shadow-sm" style="background: #1B396A; border: 2px solid #0B2545; border-radius: 12px;">
+                            Hacer ejercicios <i class="bi bi-check-all ms-2"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
+                        <a href="{{ url_for('cursos.nueva_leccion', id_curso=leccion.id_curso) }}" class="btn text-white fw-bold px-4 py-2 shadow-sm" style="background: #16A34A; border: 2px solid #14532d; border-radius: 12px;">
+                            <i class="bi bi-plus-circle-fill me-1"></i> Nueva Lección
+                        </a>
+                    {% endif %}
+                    
+                    {% if next_id.val %}
+                        <a href="{{ url_for('cursos.ver_leccion', id=next_id.val) }}" class="btn text-dark fw-bolder px-5 py-2 shadow-sm" style="background: #FDE047; border: 2px solid #eab308; border-radius: 12px; transition: 0.2s;" onmouseover="this.style.background='#fef08a'" onmouseout="this.style.background='#FDE047'">
+                            Siguiente lección <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                    {% else %}
+                        <!-- Última lección -->
+                        <a href="{{ url_for('cursos.ver_curso', id=curso_obj.id) }}" class="btn text-white fw-bolder px-5 py-2 shadow-sm" style="background: #22C55E; border: 2px solid #16A34A; border-radius: 12px;">
+                            <i class="bi bi-trophy-fill me-2 text-warning"></i> Resumen de Curso
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+        </div>
+    </main>
+</div>
+
+<!-- Toast de Completado -->
+<div class="toast-completada" id="toastCompletada">
+    <div class="toast-icon">🎉</div>
+    <div>
+        <div class="fw-bold" style="font-size:1rem;">¡Lección Completada!</div>
+        <div id="toastMsg" style="font-size:0.85rem; opacity:0.9;"></div>
+    </div>
+</div>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+    function seleccionarOpcion(idx, el, letra, respuestaCorrecta) {
+        const quiz = document.getElementById('quiz-' + idx);
+        if (quiz.dataset.respondido) return;
+        quiz.dataset.respondido = '1';
+
+        const opciones = quiz.querySelectorAll('.quiz-option');
+        opciones.forEach(op => op.style.pointerEvents = 'none');
+
+        const esCorrecto = letra.toLowerCase() === respuestaCorrecta.toLowerCase();
+        el.classList.add(esCorrecto ? 'correcta' : 'incorrecta');
+
+        if (!esCorrecto) {
+            opciones.forEach(op => {
+                if (op.dataset.letra && op.dataset.letra.toLowerCase() === respuestaCorrecta.toLowerCase()) {
+                    op.classList.add('correcta');
+                }
+            });
+        }
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Acertado! Muy bien.';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Incorrecto. La respuesta clave es: <strong>${respuestaCorrecta}</strong>`;
+        }
+    }
+
+    function verificarNumerico(idx, respuestaCorrecta) {
+        const input = document.getElementById('num-input-' + idx);
+        const valUsuario = parseFloat(input.value);
+        const valCorrecto = parseFloat(respuestaCorrecta);
+        const esCorrecto = Math.abs(valUsuario - valCorrecto) < 0.001;
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Correcto!';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Incorrecto. La respuesta es: <strong>${respuestaCorrecta}</strong>`;
+        }
+        input.disabled = true;
+    }
+
+    function verificarCompletar(idx) {
+        const wrap = document.getElementById('completar-wrap-' + idx);
+        const quiz = document.getElementById('quiz-' + idx);
+        if (quiz.dataset.respondido) return;
+
+        const inputs = wrap.querySelectorAll('input');
+        const respuestaUsuario = [...inputs].map(i => i.value.trim()).join('|');
+        const respuestaCorrecta = wrap.dataset.respuesta || '';
+        const partesU = respuestaUsuario.split('|').map(s => s.trim().toLowerCase());
+        const partesC = respuestaCorrecta.split('|').map(s => s.trim().toLowerCase());
+        const esCorrecto = partesU.length === partesC.length && partesU.every((u, i) => u === partesC[i] || partesC[i].split(';').includes(u));
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        quiz.dataset.respondido = '1';
+        inputs.forEach(i => i.disabled = true);
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Correcto!';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Incorrecto. Respuesta esperada: <strong>${respuestaCorrecta}</strong>`;
+        }
+    }
+
+    function verificarOrdenar(idx, respuestaCorrecta) {
+        const quiz = document.getElementById('quiz-' + idx);
+        if (quiz.dataset.respondido) return;
+        const lista = document.getElementById('ordenar-inline-' + idx);
+        const orden = [...lista.querySelectorAll('.ordenar-inline-item')].map(el => el.dataset.letra).join(',');
+        const esCorrecto = orden.replace(/\s/g, '').toLowerCase() === respuestaCorrecta.replace(/\s/g, '').toLowerCase();
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        quiz.dataset.respondido = '1';
+        lista.querySelectorAll('.ordenar-inline-item').forEach(el => el.draggable = false);
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Orden correcto!';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Orden incorrecto. Secuencia correcta: <strong>${respuestaCorrecta}</strong>`;
+        }
+    }
+
+    function verificarCorta(idx, respuestaCorrecta) {
+        const quiz = document.getElementById('quiz-' + idx);
+        if (quiz.dataset.respondido) return;
+        const input = document.getElementById('corta-input-' + idx);
+        const usuario = (input.value || '').trim().toLowerCase();
+        const alternativas = (respuestaCorrecta || '').split(';').map(s => s.trim().toLowerCase());
+        const esCorrecto = alternativas.includes(usuario);
+
+        const res = document.getElementById('quiz-result-' + idx);
+        res.style.display = 'block';
+        quiz.dataset.respondido = '1';
+        input.disabled = true;
+        if (esCorrecto) {
+            res.style.background = '#dcfce7'; res.style.color = '#14532d';
+            res.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Correcto!';
+        } else {
+            res.style.background = '#fee2e2'; res.style.color = '#7f1d1d';
+            res.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Incorrecto. Respuesta esperada: <strong>${respuestaCorrecta.split(';')[0]}</strong>`;
+        }
+    }
+
+    // Inicializar ejercicios de completar texto en la vista de lección
+    document.querySelectorAll('[id^="completar-wrap-"]').forEach(wrap => {
+        const pregunta = wrap.dataset.pregunta || '';
+        const partes = pregunta.split(/\[([^\]]*)\]/);
+        wrap.innerHTML = '';
+        for (let i = 0; i < partes.length; i++) {
+            if (i % 2 === 0) {
+                if (partes[i]) wrap.appendChild(document.createTextNode(partes[i]));
+            } else {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control d-inline-block mx-1';
+                input.style.width = '100px';
+                input.style.display = 'inline-block';
+                wrap.appendChild(input);
+            }
+        }
+    });
+
+    // Mezclar y habilitar drag en ordenar pasos inline
+    document.querySelectorAll('.ordenar-inline-list').forEach(lista => {
+        const items = [...lista.children];
+        for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            lista.appendChild(items[j]);
+        }
+        let arrastrado = null;
+        lista.querySelectorAll('.ordenar-inline-item').forEach(item => {
+            item.addEventListener('dragstart', () => { arrastrado = item; });
+            item.addEventListener('dragover', e => e.preventDefault());
+            item.addEventListener('drop', e => {
+                e.preventDefault();
+                if (arrastrado && arrastrado !== item) {
+                    const rect = item.getBoundingClientRect();
+                    lista.insertBefore(arrastrado, e.clientY > rect.top + rect.height / 2 ? item.nextSibling : item);
+                }
+            });
+        });
+    });
+
+    function mostrarToast(puntos, insignias) {
+        const toast = document.getElementById('toastCompletada');
+        const msg = document.getElementById('toastMsg');
+        let texto = '+' + puntos + ' XP ganados';
+        if (insignias && insignias.length > 0) texto += ' · 🏆 ' + insignias.join(', ');
+        msg.textContent = texto;
+        toast.classList.add('show');
+
+        const banner = document.getElementById('bannerEsperando');
+        if (banner) {
+            banner.style.background = 'linear-gradient(90deg, #16a34a, #15803d)';
+            banner.querySelector('#textoEsperando').textContent = '¡Lección completada! Buen trabajo 🎉';
+            banner.querySelector('i').className = 'bi bi-check-circle-fill fs-4';
+        }
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            window.location.reload(); 
+        }, 5500);
+    }
+
+    function autoCompletarLeccion(leccionId) {
+        fetch('/cursos/leccion/' + leccionId + '/auto-completar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '' },
+            credentials: 'same-origin'
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'completada') {
+                    mostrarToast(data.puntos, data.nuevas_insignias);
+                }
+            })
+            .catch(err => console.error('Error auto-completando:', err));
+    }
+
+    const ytVideos = window._ytVideos || [];
+    const ytPlayers = {};
+
+    function extraerVideoId(url) {
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+            if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+        } catch { }
+        return null;
+    }
+
+    function onYouTubeIframeAPIReady() {
+        ytVideos.forEach(info => {
+            const videoId = extraerVideoId(info.url);
+            if (!videoId) return;
+            ytPlayers[info.idx] = new YT.Player('yt-player-' + info.idx, {
+                videoId: videoId,
+                playerVars: { rel: 0, modestbranding: 1 },
+                events: {
+                    onStateChange: function (event) {
+                        onPlayerStateChange(event, info.idx, info.leccionId);
+                    }
+                }
+            });
+        });
+    }
+
+    function onPlayerStateChange(event, idx, leccionId) {
+        const statusEl = document.getElementById('video-status-' + idx);
+        if (event.data === YT.PlayerState.ENDED) {
+            if (statusEl) {
+                statusEl.className = 'video-status done';
+                statusEl.innerHTML = '<i class="bi bi-check-circle-fill"></i><span>¡Video completado!</span>';
+            }
+            {% if current_user.rol == 'estudiante' and not completada %}
+                autoCompletarLeccion(leccionId);
+            {% endif %}
+        } else if (event.data === YT.PlayerState.PLAYING) {
+            if (statusEl) {
+                statusEl.className = 'video-status watching';
+                statusEl.innerHTML = '<i class="bi bi-eye"></i><span>Mirando el video... se completará automáticamente al terminar</span>';
+            }
+        }
+    }
+</script>
+
+{% include "componentes/chatbot.html" %}
+{% endblock %}

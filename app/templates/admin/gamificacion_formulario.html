@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('admin.gamificacion') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i> Regresar</a>
+            <h2 class="fw-bold mb-0">Crear {{ 'Insignia' if tipo == 'insignia' else 'Artículo de Tienda' }}</h2>
+        </div>
+
+        <div class="card shadow-sm rounded-4 border-0">
+            <div class="card-body p-4">
+                <form action="" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre</label>
+                        <input type="text" class="form-control" name="nombre" required placeholder="Ej. Dragon Dorado, Maestro de Álgebra...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción</label>
+                        <textarea class="form-control" name="descripcion" rows="2" placeholder="Brinda una descripción corta..." required></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Icono (Bootstrap Class o Emoji)</label>
+                            <input type="text" class="form-control" name="icono" required placeholder="bi-award, 🐉, etc.">
+                            <div class="form-text">Usa el prefijo bi- para usar iconos de Bootstrap.</div>
+                        </div>
+                        
+                        {% if tipo == 'insignia' %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Criterio Interno (Backend)</label>
+                            <input type="text" class="form-control" name="criterio" required placeholder="ej. primera_leccion">
+                        </div>
+                        {% else %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Tipo de Artículo</label>
+                            <select class="form-select" name="tipo_articulo" required>
+                                <option value="avatar">Avatar</option>
+                                <option value="marco">Marco Decorativo</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-4">
+                        {% if tipo == 'insignia' %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nivel Mínimo Requerido</label>
+                            <input type="number" class="form-control" name="nivel_requerido" value="1" min="1" required>
+                        </div>
+                        {% else %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Precio (Matacoins)</label>
+                            <input type="number" class="form-control" name="precio" value="100" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Rareza</label>
+                            <select class="form-select" name="rareza" required>
+                                <option value="comun">Común</option>
+                                <option value="raro">Raro</option>
+                                <option value="epico">Épico</option>
+                                <option value="legendario">Legendario</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <label class="form-label fw-bold">Clase CSS Adicional (solo para Marcos)</label>
+                            <input type="text" class="form-control" name="css_clase" placeholder="ej. marco-dorado, marco-fuego">
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="activo" name="activo" checked>
+                                <label class="form-check-label fw-bold" for="activo">Visible en Tienda Activamente</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary py-2 fw-semibold">
+                            Crear {{ 'Insignia' if tipo == 'insignia' else 'Artículo' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

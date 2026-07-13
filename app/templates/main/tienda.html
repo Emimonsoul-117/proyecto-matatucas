@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --brand-navy:   #0B2545;
+        --brand-blue:   #1B396A;
+        --brand-orange: #FF7A00;
+        --brand-green:  #10B981;
+    }
+
+    /* ── HERO ── */
+    .tienda-hero {
+        background: linear-gradient(135deg, #071B36 0%, #0B2545 60%, #1B396A 100%);
+        border-bottom: 5px solid var(--brand-orange);
+        padding: 2rem 3rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+    }
+    .tienda-hero h1 {
+        font-size: 1.7rem;
+        font-weight: 900;
+        margin: 0;
+        color: #FFFFFF;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .tienda-hero h1 i { color: var(--brand-orange) !important; }
+    .tienda-hero .hero-sub {
+        color: #93C5FD;   /* azul claro visible sobre navy */
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    .saldo-hero {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: rgba(255,255,255,0.12);
+        border: 2px solid rgba(255, 195, 0, 0.5);
+        border-radius: 50px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 800;
+    }
+    .saldo-hero .amount { font-size: 1.5rem; color: #FDE68A; }
+    .saldo-hero .label  { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+
+    /* ── PANEL EQUIPADO ── */
+    .equip-panel {
+        max-width: 1300px;
+        margin: 1.5rem auto 0;
+        padding: 0 1.5rem;
+    }
+    .equip-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid rgba(0,0,0,0.07);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        padding: 1.25rem 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .equip-avatar {
+        width: 72px; height: 72px;
+        border-radius: 50%;
+        border: 3px solid var(--brand-orange);
+        display: flex; align-items: center; justify-content: center;
+        background: #F0F4F8;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .equip-info { flex: 1; min-width: 180px; }
+    .equip-info strong { font-size: 1rem; font-weight: 800; color: #0F172A; }
+    .equip-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .equip-badge {
+        padding: 3px 10px; border-radius: 50px;
+        font-size: 0.72rem; font-weight: 700;
+        background: rgba(11,37,69,0.08); color: var(--brand-navy);
+    }
+    .equip-badge.orange { background: rgba(255,122,0,0.12); color: var(--brand-orange); }
+    .equip-badge.green  { background: rgba(16,185,129,0.12); color: var(--brand-green); }
+
+    /* ── TABS ── */
+    .tienda-tabs {
+        max-width: 1300px;
+        margin: 1.25rem auto 0;
+        padding: 0 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+    .tab-btn {
+        padding: 0.6rem 1.5rem;
+        border-radius: 50px;
+        border: 2px solid #E2E8F0;
+        background: #FFFFFF;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #64748B;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .tab-btn.active {
+        background: var(--brand-navy);
+        border-color: var(--brand-navy);
+        color: white;
+    }
+    .tab-btn:hover:not(.active) {
+        border-color: var(--brand-orange);
+        color: var(--brand-orange);
+        background: #FFF9F5;
+    }
+
+    /* ── GRID DE ARTÍCULOS ── */
+    .tienda-body {
+        max-width: 1300px;
+        margin: 1.25rem auto 2rem;
+        padding: 0 1.5rem;
+        background: #F0F4F8;
+        min-height: calc(100vh - 320px);
+    }
+
+    .articulos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1.1rem;
+    }
+
+    /* ── TARJETA DE ARTÍCULO ── */
+    .art-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 2px solid #E2E8F0;
+        padding: 1.25rem 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.6rem;
+        text-align: center;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    .art-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--brand-orange);
+        box-shadow: 0 10px 25px rgba(255,122,0,0.12);
+    }
+    .art-card.comprado {
+        border-color: rgba(16,185,129,0.3);
+        background: linear-gradient(135deg, #FFFFFF, #F0FDF4);
+    }
+    .art-card.comprado:hover {
+        border-color: var(--brand-green);
+        box-shadow: 0 10px 25px rgba(16,185,129,0.12);
+    }
+    .art-card.equipado {
+        border-color: var(--brand-green) !important;
+        box-shadow: 0 0 0 3px rgba(16,185,129,0.2) !important;
+    }
+
+    /* Cinta "Equipado" en esquina */
+    .art-card.equipado::before {
+        content: 'EQUIPADO';
+        position: absolute;
+        top: 10px; right: -20px;
+        background: var(--brand-green);
+        color: white;
+        font-size: 0.55rem;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        padding: 3px 28px;
+        transform: rotate(35deg);
+    }
+
+    .art-preview {
+        width: 76px; height: 76px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+        font-size: 2.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .art-preview.marco-preview {
+        background: #F8FAFC;
+        border: 2px dashed #CBD5E1;
+        padding: 4px;
+    }
+
+    .art-name  { font-size: 0.9rem; font-weight: 900; color: #0F172A; line-height: 1.3; }
+    .art-desc  { font-size: 0.74rem; color: #475569; line-height: 1.4; font-weight: 500; }
+
+    .rareza-badge {
+        font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px;
+        padding: 3px 10px; border-radius: 50px;
+    }
+    .rareza-comun     { background: #94A3B8; color: white; }
+    .rareza-raro      { background: linear-gradient(90deg,#3B82F6,#6366F1); color: white; }
+    .rareza-epico     { background: linear-gradient(90deg,#8B5CF6,#A855F7); color: white; }
+    .rareza-legendario {
+        background: linear-gradient(90deg,#F59E0B,#EF4444); color: white;
+        animation: glow-legend 2s ease-in-out infinite;
+    }
+    @keyframes glow-legend {
+        0%,100% { box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+        50%      { box-shadow: 0 0 14px rgba(245,158,11,0.7); }
+    }
+
+    /* Botones de acción */
+    .btn-art {
+        width: 100%; border: none; border-radius: 8px;
+        padding: 0.5rem 0;
+        font-weight: 800; font-size: 0.82rem;
+        cursor: pointer; transition: all 0.15s;
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem;
+    }
+    .btn-art.comprar {
+        background: var(--brand-navy); color: white;
+    }
+    .btn-art.comprar:hover { background: var(--brand-orange); }
+    .btn-art.comprar:disabled { background: #CBD5E1; color: #94A3B8; cursor: not-allowed; }
+    .btn-art.equipar { background: #EFF6FF; color: var(--brand-navy); border: 2px solid var(--brand-navy); }
+    .btn-art.equipar:hover { background: var(--brand-navy); color: white; }
+    .btn-art.ya-equipado { background: var(--brand-green); color: white; }
+
+    /* Marco CSS classes */
+    .marco-bronce { border: 3px solid #CD7F32; box-shadow: 0 0 8px rgba(205,127,50,0.4); }
+    .marco-plata  { border: 3px solid #C0C0C0; box-shadow: 0 0 10px rgba(192,192,192,0.5); }
+    .marco-oro    { border: 3px solid #FFD700; box-shadow: 0 0 12px rgba(255,215,0,0.5); }
+    .marco-fuego  { border: 3px solid #ef4444; box-shadow: 0 0 14px rgba(239,68,68,0.5), 0 0 28px rgba(245,158,11,0.3); animation: marco-fuego 2s ease-in-out infinite; }
+    @keyframes marco-fuego { 0%,100%{box-shadow:0 0 14px rgba(239,68,68,0.5),0 0 28px rgba(245,158,11,0.3);} 50%{box-shadow:0 0 20px rgba(239,68,68,0.7),0 0 40px rgba(245,158,11,0.5);} }
+    .marco-neon   { border: 3px solid #06b6d4; box-shadow: 0 0 12px rgba(6,182,212,0.6), 0 0 24px rgba(6,182,212,0.3); animation: marco-neon 1.5s ease-in-out infinite; }
+    @keyframes marco-neon { 0%,100%{box-shadow:0 0 12px rgba(6,182,212,0.6),0 0 24px rgba(6,182,212,0.3);} 50%{box-shadow:0 0 18px rgba(6,182,212,0.8),0 0 36px rgba(6,182,212,0.5);} }
+    .marco-diamante {
+        border: 3px solid transparent;
+        background-image: linear-gradient(#fff,#fff), linear-gradient(135deg,#818cf8,#e879f9,#38bdf8,#818cf8);
+        background-origin: border-box; background-clip: padding-box,border-box;
+        box-shadow: 0 0 16px rgba(129,140,248,0.4);
+        animation: marco-diamante 3s linear infinite;
+    }
+    @keyframes marco-diamante { 0%{filter:hue-rotate(0deg);} 100%{filter:hue-rotate(360deg);} }
+    .marco-cosmico {
+        border: 3px solid transparent;
+        background-image: linear-gradient(#fff,#fff), linear-gradient(135deg,#6366f1,#ec4899,#f59e0b,#10b981,#6366f1);
+        background-origin: border-box; background-clip: padding-box,border-box;
+        box-shadow: 0 0 20px rgba(99,102,241,0.4); animation: marco-cosmico 4s linear infinite;
+    }
+    @keyframes marco-cosmico { 0%{filter:hue-rotate(0deg) brightness(1);} 50%{filter:hue-rotate(180deg) brightness(1.1);} 100%{filter:hue-rotate(360deg) brightness(1);} }
+
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding: 3rem 1.5rem; color: #94A3B8; }
+    .empty-state i { font-size: 3rem; display:block; margin-bottom: 1rem; }
+</style>
+
+<!-- HERO -->
+<div class="tienda-hero">
+    <div>
+        <h1><i class="bi bi-shop-window me-2" style="color:var(--brand-orange);"></i>Tienda de Recompensas</h1>
+        <div class="hero-sub">Gasta tus Matacoins en avatares y marcos exclusivos</div>
+    </div>
+    <div class="saldo-hero">
+        <i class="bi bi-coin fs-4" style="color:#FDE68A;"></i>
+        <span class="amount">{{ estudiante.monedas }}</span>
+        <span class="label">Matacoins</span>
+    </div>
+</div>
+
+<!-- EQUIPAMIENTO ACTUAL -->
+<div class="equip-panel">
+    <div class="equip-card">
+        <div class="equip-avatar {{ estudiante.marco_activo or '' }}">
+            {% if estudiante.avatar_activo %}
+                <span style="font-size:2.2rem;">{{ estudiante.avatar_activo }}</span>
+            {% else %}
+                <img src="https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=1B396A&color=fff&size=72"
+                     class="rounded-circle" style="width:100%;height:100%;object-fit:cover;" alt="Avatar">
+            {% endif %}
+        </div>
+        <div class="equip-info">
+            <strong>{{ current_user.nombre }}</strong>
+            <div class="equip-badges">
+                <span class="equip-badge">Nivel {{ (estudiante.puntos_totales // 1000) + 1 }}</span>
+                {% if estudiante.marco_activo %}
+                <span class="equip-badge orange"><i class="bi bi-border-style"></i> Marco activo</span>
+                {% endif %}
+                {% if estudiante.avatar_activo %}
+                <span class="equip-badge green"><i class="bi bi-emoji-smile"></i> Avatar activo</span>
+                {% endif %}
+            </div>
+        </div>
+        <div style="font-size:0.82rem; color:#64748B;">
+            <i class="bi bi-info-circle me-1"></i> Tu apariencia actual en la plataforma
+        </div>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tienda-tabs">
+    <button class="tab-btn active" id="tab-avatares" onclick="switchTab('avatares')">
+        <i class="bi bi-emoji-smile-fill"></i> Avatares
+    </button>
+    <button class="tab-btn" id="tab-marcos" onclick="switchTab('marcos')">
+        <i class="bi bi-border-style"></i> Marcos
+    </button>
+</div>
+
+<!-- ARTÍCULOS -->
+<div class="tienda-body">
+
+    <!-- AVATARES -->
+    <div id="pane-avatares" class="articulos-grid">
+        {% set avatares = articulos | selectattr('tipo', 'equalto', 'avatar') | list %}
+        {% if avatares %}
+            {% for art in avatares %}
+            {% set comprado = art.id in ids_comprados %}
+            {% set equipado = estudiante.avatar_activo == art.icono %}
+            <div class="art-card {{ 'equipado' if equipado else ('comprado' if comprado) }}">
+                <span class="rareza-badge rareza-{{ art.rareza }}">{{ art.rareza|capitalize }}</span>
+                <div class="art-preview">
+                    <span>{{ art.icono }}</span>
+                </div>
+                <div class="art-name">{{ art.nombre }}</div>
+                <div class="art-desc">{{ art.descripcion }}</div>
+                {% if comprado %}
+                    <form method="POST" action="{{ url_for('main.equipar_articulo', id_articulo=art.id) }}" class="w-100">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        {% if equipado %}
+                        <button type="button" class="btn-art ya-equipado">
+                            <i class="bi bi-check-circle-fill"></i> Equipado
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn-art equipar">
+                            <i class="bi bi-play-circle-fill"></i> Equipar
+                        </button>
+                        {% endif %}
+                    </form>
+                {% else %}
+                    <form method="POST" action="{{ url_for('main.comprar_articulo', id_articulo=art.id) }}" class="w-100">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn-art comprar" {{ 'disabled' if estudiante.monedas < art.precio }}>
+                            <i class="bi bi-coin"></i> {{ art.precio }} MC
+                        </button>
+                    </form>
+                    {% if estudiante.monedas < art.precio %}
+                    <small style="color:#EF4444; font-size:0.68rem; font-weight:700;">
+                        <i class="bi bi-lock-fill"></i> Faltan {{ art.precio - estudiante.monedas }} MC
+                    </small>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="grid-column:1/-1;">
+                <i class="bi bi-emoji-smile"></i>
+                <strong>No hay avatares disponibles aún.</strong>
+                <p class="mt-1">El administrador añadirá artículos pronto.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- MARCOS -->
+    <div id="pane-marcos" class="articulos-grid" style="display:none;">
+        {% set marcos = articulos | selectattr('tipo', 'equalto', 'marco') | list %}
+        {% if marcos %}
+            {% for art in marcos %}
+            {% set comprado = art.id in ids_comprados %}
+            {% set equipado = estudiante.marco_activo == art.css_clase %}
+            <div class="art-card {{ 'equipado' if equipado else ('comprado' if comprado) }}">
+                <span class="rareza-badge rareza-{{ art.rareza }}">{{ art.rareza|capitalize }}</span>
+                <div class="art-preview marco-preview {{ art.css_clase }}">
+                    <img src="https://ui-avatars.com/api/?name={{ current_user.nombre }}&background=1B396A&color=fff&size=64"
+                         class="rounded-circle" style="width:64px;height:64px;object-fit:cover;" alt="">
+                </div>
+                <div class="art-name">{{ art.nombre }}</div>
+                <div class="art-desc">{{ art.descripcion }}</div>
+                {% if comprado %}
+                    <form method="POST" action="{{ url_for('main.equipar_articulo', id_articulo=art.id) }}" class="w-100">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        {% if equipado %}
+                        <button type="button" class="btn-art ya-equipado">
+                            <i class="bi bi-check-circle-fill"></i> Equipado
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn-art equipar">
+                            <i class="bi bi-play-circle-fill"></i> Equipar
+                        </button>
+                        {% endif %}
+                    </form>
+                {% else %}
+                    <form method="POST" action="{{ url_for('main.comprar_articulo', id_articulo=art.id) }}" class="w-100">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn-art comprar" {{ 'disabled' if estudiante.monedas < art.precio }}>
+                            <i class="bi bi-coin"></i> {{ art.precio }} MC
+                        </button>
+                    </form>
+                    {% if estudiante.monedas < art.precio %}
+                    <small style="color:#EF4444; font-size:0.68rem; font-weight:700;">
+                        <i class="bi bi-lock-fill"></i> Faltan {{ art.precio - estudiante.monedas }} MC
+                    </small>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="grid-column:1/-1;">
+                <i class="bi bi-border-style"></i>
+                <strong>No hay marcos disponibles aún.</strong>
+                <p class="mt-1">El administrador añadirá artículos pronto.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function switchTab(tab) {
+    document.getElementById('pane-avatares').style.display = tab === 'avatares' ? 'grid' : 'none';
+    document.getElementById('pane-marcos').style.display   = tab === 'marcos'   ? 'grid' : 'none';
+    document.getElementById('tab-avatares').classList.toggle('active', tab === 'avatares');
+    document.getElementById('tab-marcos').classList.toggle('active', tab === 'marcos');
+}
+</script>
+{% endblock %}

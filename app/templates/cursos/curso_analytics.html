@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Estilos Premium para Métricas */
+    .metric-card-premium {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 4px 18px rgba(0, 51, 102, 0.03);
+    }
+    .metric-card-premium:hover {
+        transform: translateY(-4px);
+        border-color: rgba(249, 115, 22, 0.4) !important;
+        box-shadow: 0 12px 24px rgba(249, 115, 22, 0.08) !important;
+    }
+    .metric-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: bold;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1rem;
+    }
+
+    .table-premium {
+        border-collapse: separate;
+        border-spacing: 0 6px;
+    }
+    .table-premium tr {
+        background: rgba(255, 255, 255, 0.5);
+        transition: all 0.2s ease;
+    }
+    .table-premium tr:hover {
+        background: rgba(255, 255, 255, 0.85);
+    }
+    .table-premium th {
+        border: none;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+        padding: 10px 14px;
+    }
+    .table-premium td {
+        border-top: 1px solid rgba(255, 255, 255, 0.6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+        padding: 12px 14px;
+        font-size: 0.88rem;
+    }
+    .table-premium td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.6);
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+    .table-premium td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.6);
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+</style>
+
+<div class="container py-4" style="max-width: 1100px;">
+    <!-- CABECERA -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 animate-fade-in">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Analíticas del Curso</h1>
+            <p class="text-muted mb-0">Curso: <strong class="text-dark">{{ curso.titulo }}</strong></p>
+        </div>
+        <div>
+            <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; border-color: #cbd5e1; color: #475569;">
+                <i class="bi bi-arrow-left"></i>
+                <span>Volver al Curso</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- TARJETAS DE MÉTRICAS -->
+    <div class="row g-3 mb-4 animate-slide-up">
+        <!-- Lecciones -->
+        <div class="col-md-3">
+            <div class="metric-card-premium p-4 h-100">
+                <div class="metric-icon-wrapper bg-primary-subtle text-primary-brand">
+                    <i class="bi bi-book-half"></i>
+                </div>
+                <div class="text-muted small fw-semibold">Lecciones Totales</div>
+                <div class="fw-bold fs-3 text-dark mt-1">{{ total_lecciones }}</div>
+            </div>
+        </div>
+        <!-- Estudiantes -->
+        <div class="col-md-3">
+            <div class="metric-card-premium p-4 h-100">
+                <div class="metric-icon-wrapper" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="text-muted small fw-semibold">Estudiantes Inscritos</div>
+                <div class="fw-bold fs-3 text-dark mt-1">{{ total_estudiantes }}</div>
+            </div>
+        </div>
+        <!-- Tasa completitud -->
+        <div class="col-md-3">
+            <div class="metric-card-premium p-4 h-100">
+                <div class="metric-icon-wrapper" style="background-color: rgba(245, 158, 11, 0.1); color: #F59E0B;">
+                    <i class="bi bi-check-all"></i>
+                </div>
+                <div class="text-muted small fw-semibold">Tasa de Completitud</div>
+                <div class="fw-bold fs-3 text-dark mt-1">{{ tasa_completitud|round(1, 'common') }}%</div>
+            </div>
+        </div>
+        <!-- Promedio Puntaje -->
+        <div class="col-md-3">
+            <div class="metric-card-premium p-4 h-100">
+                <div class="metric-icon-wrapper" style="background-color: rgba(99, 102, 241, 0.1); color: #6366F1;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="text-muted small fw-semibold">Calificación Promedio</div>
+                <div class="fw-bold fs-3 text-dark mt-1">{{ avg_puntaje_global|round(1, 'common') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BANNER: TASA DE ACIERTO GLOBAL -->
+    <div class="card border-0 shadow-sm mb-4 animate-slide-up" style="border-radius: 18px; background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center" 
+                         style="width: 46px; height: 46px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                        <i class="bi bi-check2-square fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-dark">Tasa de Acierto Global</h5>
+                        <p class="text-muted small mb-0">Relación de respuestas correctas sobre el total de intentos registrados.</p>
+                    </div>
+                </div>
+                <div class="text-md-end">
+                    <span class="fw-extrabold text-success display-6" style="font-size: 2.2rem; line-height: 1;">{{ tasa_correcta|round(1, 'common') }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTADO DE ALUMNOS CON PROGRESO -->
+    <div class="card border-0 shadow-sm animate-slide-up" style="border-radius: 18px; background: rgba(255,255,255,0.75); backdrop-filter: blur(10px);">
+        <div class="card-header border-0 bg-transparent pt-4 px-4 pb-2">
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-graph-up text-primary-brand"></i>
+                <span>Estudiantes Ordenados por Progreso</span>
+            </h5>
+        </div>
+        <div class="card-body px-4 pb-4">
+            {% if estudiantes|length == 0 %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-people mb-2 fs-2 d-block opacity-50"></i>
+                No hay estudiantes inscritos en este curso.
+            </div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table table-premium align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Alumno</th>
+                            <th class="text-center">Progreso</th>
+                            <th class="text-center">Calificación Prom.</th>
+                            <th class="text-center">Respuestas Correctas</th>
+                            <th class="text-center">Intentos Totales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for est in estudiantes %}
+                        <tr>
+                            <!-- Nombre -->
+                            <td>
+                                <div class="fw-bold text-dark">{{ est.usuario.nombre }}</div>
+                                {% if est.usuario.numero_control %}
+                                <small class="text-muted font-monospace" style="font-size: 0.75rem;">{{ est.usuario.numero_control }}</small>
+                                {% endif %}
+                            </td>
+                            <!-- Progreso -->
+                            <td class="text-center fw-bold {% if est.progreso >= 100 %}text-success{% else %}text-dark{% endif %}">
+                                {{ est.progreso|int }}%
+                            </td>
+                            <!-- Avg Puntaje -->
+                            <td class="text-center fw-semibold text-primary-brand">
+                                {{ est.avg_puntaje|round(1, 'common') }}
+                            </td>
+                            <!-- Correctas -->
+                            <td class="text-center text-success fw-medium">
+                                {{ est.correctas }}
+                            </td>
+                            <!-- Intentos -->
+                            <td class="text-center text-muted fw-medium">
+                                {{ est.total_intentos }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

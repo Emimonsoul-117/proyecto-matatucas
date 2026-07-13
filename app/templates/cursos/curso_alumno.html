@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .glass-card-premium {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 51, 102, 0.04);
+        padding: 2rem;
+    }
+    
+    .status-alert-blocked {
+        border-left: 5px solid #9D2449 !important;
+        background: rgba(157, 36, 73, 0.05) !important;
+        color: #9D2449 !important;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    .table-attempts {
+        border-collapse: separate;
+        border-spacing: 0 6px;
+    }
+    .table-attempts tr {
+        background: rgba(255, 255, 255, 0.5);
+        transition: all 0.2s ease;
+    }
+    .table-attempts tr:hover {
+        background: rgba(255, 255, 255, 0.85);
+    }
+    .table-attempts th {
+        border: none;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+        padding: 10px 14px;
+    }
+    .table-attempts td {
+        border-top: 1px solid rgba(255, 255, 255, 0.6);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+        padding: 12px 14px;
+        font-size: 0.88rem;
+    }
+    .table-attempts td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.6);
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+    .table-attempts td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.6);
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    .badge-attempt-yes {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        color: #059669 !important;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .badge-attempt-no {
+        background-color: rgba(157, 36, 73, 0.1) !important;
+        color: #9D2449 !important;
+        border: 1px solid rgba(157, 36, 73, 0.2);
+    }
+</style>
+
+<div class="container py-4" style="max-width: 1100px;">
+    <!-- CABECERA -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4 animate-fade-in">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Expediente del Alumno</h1>
+            <p class="text-muted mb-0">Curso: <strong class="text-dark">{{ curso.titulo }}</strong></p>
+        </div>
+        <div>
+            <a href="{{ url_for('cursos.ver_alumnos_curso', id_curso=curso.id) }}" class="btn btn-outline-secondary px-3 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; border-color: #cbd5e1; color: #475569;">
+                <i class="bi bi-arrow-left"></i>
+                <span>Volver a Alumnos</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- TARJETA GENERAL DE PERFIL -->
+    <div class="glass-card-premium mb-4 animate-slide-up">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8 d-flex align-items-center gap-3">
+                <div class="bg-primary text-white d-flex align-items-center justify-content-center fw-bold" 
+                     style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0B2545, #1B396A); font-size: 1.2rem; box-shadow: var(--shadow-sm);">
+                    {{ usuario.nombre[:2].upper() }}
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark" style="font-size: 1.3rem;">{{ usuario.nombre }}</h3>
+                    <div class="text-muted small">
+                        <i class="bi bi-envelope me-1"></i> {{ usuario.email }} 
+                        {% if usuario.numero_control %} · <i class="bi bi-card-text me-1"></i> {{ usuario.numero_control }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="text-muted small fw-semibold uppercase mb-1">Completitud</div>
+                <div class="d-flex align-items-center justify-content-md-end gap-2">
+                    <span class="fw-extrabold text-dark display-6" style="font-size: 1.8rem; line-height: 1;">{{ progreso|int }}%</span>
+                </div>
+            </div>
+        </div>
+
+        {% if inscripcion %}
+        <div class="d-flex flex-wrap gap-2 justify-content-end mt-4 pt-3 border-top">
+            {% if inscripcion.bloqueado %}
+            <form method="POST" action="{{ url_for('cursos.desbloquear_alumno_curso', id_curso=curso.id, id_estudiante=usuario.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-success px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 10px;">
+                    <i class="bi bi-unlock-fill"></i>
+                    <span>Desbloquear Alumno</span>
+                </button>
+            </form>
+            {% else %}
+            <form method="POST" action="{{ url_for('cursos.bloquear_alumno_curso', id_curso=curso.id, id_estudiante=usuario.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-warning px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; font-weight: 600;">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>Bloquear Acceso</span>
+                </button>
+            </form>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('cursos.retirar_alumno_curso', id_curso=curso.id, id_estudiante=usuario.id) }}"
+                onsubmit="return confirm('¿Estás completamente seguro de retirar la inscripción de este alumno? Se perderán todas sus respuestas, lecciones completadas e intentos registrados.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-danger px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; background-color: #9D2449;">
+                    <i class="bi bi-trash-fill"></i>
+                    <span>Retirar del Curso</span>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if inscripcion and inscripcion.bloqueado %}
+    <div class="alert status-alert-blocked p-3 mb-4 d-flex align-items-center gap-2 animate-slide-up">
+        <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+        <span>Este estudiante se encuentra actualmente <strong>bloqueado</strong>. No podrá acceder a las lecciones ni realizar ejercicios.</span>
+    </div>
+    {% endif %}
+
+    <!-- DETALLES E HISTORIAL -->
+    <div class="row g-4 animate-slide-up">
+        <!-- Lecciones completadas -->
+        <div class="col-lg-5">
+            <div class="card border-0 h-100 shadow-sm" style="border-radius: 18px; background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);">
+                <div class="card-header border-0 bg-transparent pt-4 px-4 pb-2">
+                    <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-check2-circle text-success"></i>
+                        <span>Lecciones Aprobadas</span>
+                    </h5>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    {% if completadas|length == 0 %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-journals mb-2 fs-2 d-block opacity-50"></i>
+                        Ninguna lección aprobada todavía.
+                    </div>
+                    {% else %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for c in completadas %}
+                        <div class="d-flex justify-content-between align-items-center p-3" 
+                             style="background: #ffffff; border-radius: 12px; border: 1.5px solid rgba(0,0,0,0.04); box-shadow: var(--shadow-sm);">
+                            <div>
+                                <div class="fw-bold text-dark">{{ c.orden }}. {{ c.titulo }}</div>
+                                <small class="text-muted" style="font-size:0.78rem;">
+                                    <i class="bi bi-calendar-check me-1"></i>{{ c.fecha_completada.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold" style="font-size:0.7rem;">
+                                COMPLETADA
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Intentos de Ejercicios -->
+        <div class="col-lg-7">
+            <div class="card border-0 h-100 shadow-sm" style="border-radius: 18px; background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);">
+                <div class="card-header border-0 bg-transparent pt-4 px-4 pb-2">
+                    <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i>
+                        <span>Intentos de Ejercicios</span>
+                    </h5>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    {% if intentos_rows|length == 0 %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-slash-circle mb-2 fs-2 d-block opacity-50"></i>
+                        No se registran intentos de ejercicios aún.
+                    </div>
+                    {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-attempts align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Lección</th>
+                                    <th class="text-center">Respuesta</th>
+                                    <th class="text-center">Resultado</th>
+                                    <th class="text-center">Puntaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for intento, ejercicio, leccion in intentos_rows %}
+                                <tr>
+                                    <td class="text-nowrap text-muted" style="font-size: 0.82rem;">
+                                        {{ intento.fecha_intento.strftime('%d/%m %H:%M') }}
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ leccion.orden }}. {{ leccion.titulo|truncate(22) }}</div>
+                                        <small class="text-muted" style="font-size: 0.72rem;">Ej. ID: {{ ejercicio.id }}</small>
+                                    </td>
+                                    <td class="text-center font-monospace">{{ intento.respuesta_usuario or '-' }}</td>
+                                    <td class="text-center">
+                                        {% if intento.es_correcta %}
+                                        <span class="badge badge-attempt-yes px-2 py-1"><i class="bi bi-check-lg"></i> Correcto</span>
+                                        {% else %}
+                                        <span class="badge badge-attempt-no px-2 py-1"><i class="bi bi-x-lg"></i> Incorrecto</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center fw-bold text-primary-brand">
+                                        {{ intento.puntaje|round(1, 'common') }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

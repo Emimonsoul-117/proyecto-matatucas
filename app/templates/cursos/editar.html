@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Efecto solido y claro en form inputs institucionales */
+    .form-control-premium {
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1.5px solid #cbd5e1;
+        transition: all 0.25s ease;
+        font-weight: 500;
+        font-size: 1rem;
+        color: #1e293b;
+        padding: 12px 16px;
+    }
+    .form-control-premium:focus {
+        background: #ffffff !important;
+        border-color: #1B396A !important;
+        box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.15) !important;
+        outline: none;
+    }
+    
+    /* Configuración de radios con borde e iconografía clara */
+    .radio-institucional-premium {
+        background: #ffffff;
+        border: 2px solid #cbd5e1 !important;
+        border-radius: 14px !important;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: var(--shadow-sm);
+    }
+    .radio-institucional-premium:hover {
+        border-color: #94a3b8 !important;
+        background: #f8fafc;
+        transform: translateY(-2px);
+    }
+    .custom-radio:checked + .radio-institucional-premium {
+        border: 2.5px solid #1B396A !important;
+        background: rgba(27, 57, 106, 0.04) !important;
+        box-shadow: 0 8px 20px rgba(27, 57, 106, 0.12) !important;
+        transform: translateY(-2px);
+    }
+
+    .form-card-glass {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 24px;
+        box-shadow: 0 15px 35px rgba(0, 51, 102, 0.06);
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-lg-8 col-md-10">
+
+            <!-- TARJETA INSTITUCIONAL CON BORDE ACENTUADO -->
+            <div class="form-card-glass p-4 p-md-5 animate-slide-up" style="border-top: 6px solid #16A34A !important;">
+                
+                <!-- CABECERA INSTITUCIONAL CLARA -->
+                <div class="d-flex align-items-center mb-5 pb-3 border-bottom">
+                    <div class="d-flex align-items-center justify-content-center me-3" 
+                        style="width: 56px; height: 56px; background: rgba(22, 163, 74, 0.08); border-radius: 14px; border: 1px solid rgba(22, 163, 74, 0.15);">
+                        <i class="bi bi-gear-fill fs-3 text-success"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-1 text-dark" style="color: #0B2545;">Actualizar Curso</h2>
+                        <p class="text-muted mb-0" style="font-size: 0.95rem;">Modifica el plan de estudios, descripción o complejidad de tu materia.</p>
+                    </div>
+                </div>
+
+                <form method="POST" class="needs-validation" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    
+                    <!-- TITULO DEL CURSO -->
+                    <div class="mb-4">
+                        <label for="titulo" class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Título del Programa <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-premium" id="titulo" name="titulo" value="{{ curso.titulo }}" required
+                            placeholder="Ej. Fundamentos de Álgebra Lineal">
+                        <div class="invalid-feedback">Por favor ingresa un título para el curso.</div>
+                    </div>
+
+                    <!-- DESCRIPCIÓN ACADÉMICA -->
+                    <div class="mb-5">
+                        <label for="descripcion" class="form-label fw-bold text-dark" style="font-size: 0.95rem;">Descripción Académica / Sinopsis <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-premium" id="descripcion" name="descripcion" required
+                            placeholder="Escribe los objetivos de aprendizaje, contenidos claves y resumen general del curso..."
+                            style="height: 140px; resize: none;">{{ curso.descripcion }}</textarea>
+                        <div class="invalid-feedback">Por favor ingresa una descripción para el curso.</div>
+                    </div>
+
+                    <!-- NIVEL EDUCATIVO (SEPARACIÓN CLARA) -->
+                    <div class="mb-5 p-4" style="background: rgba(255,255,255,0.4); border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);">
+                        <label class="form-label fw-bold mb-3 d-flex align-items-center text-dark" style="font-size: 0.95rem;">
+                            <i class="bi bi-bar-chart-steps me-2 fs-5 text-primary-brand"></i> Nivel del curso
+                        </label>
+                        <div class="d-flex flex-column flex-md-row gap-3">
+                            
+                            <!-- Básico -->
+                            <div class="flex-grow-1">
+                                <input type="radio" class="btn-check custom-radio" name="nivel" id="nivel-basico" value="basico" autocomplete="off" {% if curso.nivel=='basico' %}checked{% endif %}>
+                                <label class="btn radio-institucional-premium w-100 p-3 text-start" for="nivel-basico">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3" style="width: 14px; height: 14px; border-radius: 50%; background-color: #10B981;"></div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0 text-dark">Nivel Básico</h6>
+                                            <small class="text-muted">Introducción y fundamentos</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- Medio -->
+                            <div class="flex-grow-1">
+                                <input type="radio" class="btn-check custom-radio" name="nivel" id="nivel-intermedio" value="intermedio" autocomplete="off" {% if curso.nivel=='intermedio' %}checked{% endif %}>
+                                <label class="btn radio-institucional-premium w-100 p-3 text-start" for="nivel-intermedio">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3" style="width: 14px; height: 14px; border-radius: 50%; background-color: #F97316;"></div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0 text-dark">Nivel Medio</h6>
+                                            <small class="text-muted">Temas intermedios</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- Avanzado -->
+                            <div class="flex-grow-1">
+                                <input type="radio" class="btn-check custom-radio" name="nivel" id="nivel-avanzado" value="avanzado" autocomplete="off" {% if curso.nivel=='avanzado' %}checked{% endif %}>
+                                <label class="btn radio-institucional-premium w-100 p-3 text-start" for="nivel-avanzado">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3" style="width: 14px; height: 14px; border-radius: 50%; background-color: #3B82F6;"></div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0 text-dark">Avanzado</h6>
+                                            <small class="text-muted">Especialidades complejas</small>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- PANEL DE BOTONES CLAROS Y SÓLIDOS -->
+                    <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                        <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-outline-secondary px-4 py-2 border-0" style="color: #64748b; font-weight: 600;">
+                            Descartar
+                        </a>
+                        <button type="submit" class="btn btn-primary text-white fw-bold px-5 py-2 shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, #16A34A, #15803D);">
+                            <i class="bi bi-check2-circle me-2"></i> Actualizar Plan
+                        </button>
+                    </div>
+                    
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

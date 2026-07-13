@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="claro">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matatucas - Plataforma Educativa</title>
+    <!-- Fuente: Google Fonts (Nunito & Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+    <!-- KaTeX - Renderizado rápido de ecuaciones matemáticas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        integrity="sha384-nB0miv6/jRmo5RLHO8HApez0WP8d/oVixECoOmd3WpKOS/rl28EN3eiNOR0e4Red" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+        integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRjXlVOA8PtKMIRN" crossorigin="anonymous"></script>
+    <script>
+        // Función global para renderizar ecuaciones en cualquier elemento
+        function renderizarMatematicas(elemento) {
+            if (typeof renderMathInElement === 'undefined') return;
+            const el = elemento || document.body;
+            renderMathInElement(el, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '$', right: '$', display: false }
+                ],
+                throwOnError: false,
+                trust: true
+            });
+        }
+        // Auto-render al cargar la página
+        document.addEventListener('DOMContentLoaded', function () {
+            renderizarMatematicas();
+        });
+    </script>
+    <!-- ===== JS UI ===== -->
+    <script>
+        // Efecto sombra al hacer scroll
+        window.addEventListener("scroll", () => {
+            const navbar = document.querySelector(".navbar-glass");
+            if (navbar) {
+                navbar.classList.toggle("navbar-scrolled", window.scrollY > 20);
+            }
+        });
+
+        // Detecta link activo automáticamente
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".nav-link").forEach(link => {
+                if (link.href === window.location.href) {
+                    link.classList.add("active");
+                }
+            });
+        });
+    </script>
+
+    <style>
+        /* ===== BASE GENERAL (EFECTO MESH GRADIENT PREMIUM) ===== */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e8eff9;
+            /* Luces de fondo de color institucional para dar profundidad 3D y contraste */
+            background-image:
+                radial-gradient(at 0% 0%, rgba(27, 57, 106, 0.16) 0px, transparent 65%),
+                radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.16) 0px, transparent 65%),
+                radial-gradient(at 100% 100%, rgba(22, 163, 74, 0.16) 0px, transparent 65%),
+                radial-gradient(at 0% 100%, rgba(11, 37, 69, 0.14) 0px, transparent 65%);
+            background-attachment: fixed;
+            padding-top: 4.5rem;
+        }
+
+        /* Clase global para Títulos Impactantes */
+        .text-gradient {
+            background: linear-gradient(135deg, #0B2545 0%, #1B396A 40%, #F97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ========================================================= */
+        /* ====================== NAVBAR ============================ */
+        /* ========================================================= */
+
+        .navbar-glass {
+            /* Colores institucionales combinados */
+            background: linear-gradient(135deg, #0B2545, #1B396A, #16A34A, #F97316);
+            background-size: 300% 300%;
+            animation: gradientMove 12s ease infinite;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Animación de color */
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Logo / Nombre */
+        .navbar-brand {
+            font-weight: 700;
+            color: #fff !important;
+        }
+
+        /* Links de navegación */
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            border-radius: 10px;
+            padding: 8px 12px;
+            transition: .25s;
+        }
+
+        /* Hover */
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Link activo */
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* Botón login */
+        .nav-link.btn {
+            background: linear-gradient(135deg, #F97316, #16A34A);
+            font-weight: 600;
+        }
+
+        /* Dropdown (menús) */
+        .dropdown-menu {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ========================================================= */
+        /* ====================== CARDS PREMIUM ===================== */
+        /* ========================================================= */
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, 0.8) !important;
+            background: rgba(255, 255, 255, 0.7) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px !important;
+            box-shadow: 0 8px 32px rgba(11, 37, 69, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* Hover tipo plataforma moderna (Iluminación de colores al borde) */
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(249, 115, 22, 0.45) !important;
+            /* Contorno NARANJA al interactuar */
+            box-shadow: 0 20px 40px rgba(11, 37, 69, 0.08), 0 0 20px rgba(249, 115, 22, 0.05) !important;
+        }
+
+        /* Títulos dentro de cards */
+        .card-title {
+            font-weight: 700;
+            color: #0B2545;
+        }
+
+        /* Texto secundario */
+        .card-text {
+            color: #64748B;
+        }
+
+        /* Listas limpias y transparentes dentro de tarjetas de vidrio */
+        .card .list-group-item {
+            background-color: transparent !important;
+            border-color: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        /* ========================================================= */
+        /* ====================== BOTONES =========================== */
+        /* ========================================================= */
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        /* Botón principal */
+        .btn-primary {
+            background: linear-gradient(135deg, #0B2545, #1B396A);
+            border: none;
+        }
+
+        /* Botón secundario */
+        .btn-outline-primary {
+            border: 1px solid #1B396A;
+            color: #1B396A;
+        }
+
+        /* Hover general */
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* ========================================================= */
+        /* ====================== BADGES ============================ */
+        /* ========================================================= */
+
+        .badge {
+            border-radius: 20px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        /* ========================================================= */
+        /* ====================== PROGRESS ========================== */
+        /* ========================================================= */
+
+        .progress {
+            height: 8px;
+            border-radius: 20px;
+            background: #E5E7EB;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #F97316, #16A34A);
+        }
+
+        /* ========================================================= */
+        /* ====================== RESPONSIVE ======================== */
+        /* ========================================================= */
+
+        @media(max-width:768px) {
+
+            .main-content {
+                padding: 1.5rem 1rem !important;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .btn {
+                font-size: 0.85rem;
+            }
+
+        }
+    </style>
+    <!-- Dark Mode Styles -->
+    <style>
+        html[data-theme="oscuro"] {
+            --bg-body: #0F172A;
+            --bg-card: #1E293B;
+            --text-main: #F1F5F9;
+            --text-muted: #94A3B8;
+            --border-color: #334155;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        html[data-theme="oscuro"] body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+        }
+        html[data-theme="oscuro"] .navbar-glass {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        html[data-theme="oscuro"] .navbar-brand,
+        html[data-theme="oscuro"] .nav-link {
+            color: #F1F5F9 !important;
+        }
+        html[data-theme="oscuro"] .card {
+            background-color: var(--bg-card);
+            border-color: var(--border-color);
+        }
+        html[data-theme="oscuro"] .card:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        html[data-theme="oscuro"] .card-header {
+            border-bottom-color: var(--border-color);
+        }
+        html[data-theme="oscuro"] .card-header.bg-white {
+            background-color: var(--bg-card) !important;
+        }
+        html[data-theme="oscuro"] .dropdown-menu {
+            background-color: #1E293B;
+            border-color: var(--border-color);
+        }
+        html[data-theme="oscuro"] .dropdown-item {
+            color: var(--text-main);
+        }
+        html[data-theme="oscuro"] .dropdown-item:hover {
+            background-color: #334155;
+        }
+        html[data-theme="oscuro"] .form-control,
+        html[data-theme="oscuro"] .form-select {
+            background-color: #0F172A;
+            border-color: #475569;
+            color: #F1F5F9;
+        }
+        html[data-theme="oscuro"] .text-muted {
+            color: #94A3B8 !important;
+        }
+        html[data-theme="oscuro"] .alert {
+            background-color: #1E293B;
+            border-color: var(--border-color);
+            color: var(--text-main);
+        }
+        html[data-theme="oscuro"] footer {
+            color: #64748B !important;
+        }
+        html[data-theme="oscuro"] .progress {
+            background-color: #334155;
+        }
+        /* Font size support */
+        html[data-fontsize="pequeno"] body { font-size: 14px; }
+        html[data-fontsize="normal"] body { font-size: 16px; }
+        html[data-fontsize="grande"] body { font-size: 18px; }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top navbar-glass">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
+                <img src="{{ url_for('static', filename='img/c1.jpeg') }}" alt="Logo ITST" style="height: 38px; border-radius: 6px; background: white; padding: 2px;">
+                <img src="{{ url_for('static', filename='img/c2.png') }}" alt="Logo Mapache" style="height: 38px; border-radius: 6px; background: white; padding: 2px;">
+                <span class="fw-bold text-white ms-1">Matatucas</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">Panel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('cursos.lista_cursos') }}">Cursos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.ranking') }}">
+                            <i class="bi bi-trophy me-1"></i>Ranking
+                        </a>
+                    </li>
+                    {% if current_user.rol == 'administrador' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="dropdownAdmin" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-shield-lock-fill"></i> Panel Operativo
+                        </a>
+                        <ul class="dropdown-menu shadow" aria-labelledby="dropdownAdmin">
+                            <li><h6 class="dropdown-header text-uppercase small">Métricas y Operación</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-grid-1x2-fill me-2 text-muted"></i> Resumen Operativo</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.metricas') }}"><i class="bi bi-bar-chart-fill me-2 text-muted"></i> Análisis Integrales</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.gamificacion') }}"><i class="bi bi-controller me-2 text-muted"></i> Gamificación e IA</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-uppercase small">Personas y Seguridad</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_usuarios') }}"><i class="bi bi-people-fill me-2 text-muted"></i> Control de Usuarios</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_docentes') }}"><i class="bi bi-person-vcard-fill me-2 text-muted"></i> Rendimiento Docente</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_auditoria') }}"><i class="bi bi-shield-lock-fill me-2 text-muted"></i> Log de Auditoría</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="dropdownUser1" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            {{ current_user.nombre_usuario }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
+                            <li><a class="dropdown-item" href="{{ url_for('main.perfil') }}">Mi Perfil</a></li>
+                            {% if current_user.rol == 'estudiante' %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.tienda') }}"><i class="bi bi-shop me-1"></i>Tienda</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.configuracion') }}"><i class="bi bi-gear me-1"></i>Configuración</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Cerrar
+                                    Sesión</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link btn text-white px-3"
+                            href="{{ url_for('auth.login_page') }}">Iniciar Sesión</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ALERTAS GLOBALES Y ADVERTENCIAS (con contenedor fluido) -->
+    <div class="container-fluid px-4 px-lg-5 mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'peligro' else 'success' if category == 'exito' else 'warning' if category == 'advertencia' else category }} alert-dismissible fade show shadow-sm"
+            role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Alerta global: info académica faltante -->
+        {% if falta_info_academica %}
+        <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm" role="alert"
+            style="border-left: 4px solid #f59e0b !important;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                <span>
+                    <strong>¡Completa tu perfil!</strong> Aún no has registrado tu carrera, semestre y grupo.
+                    <a href="{{ url_for('main.configuracion') }}#info-academica" class="alert-link">Ir a Configuración</a>
+                </span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- CONTENIDO LIBERADO SIN CONTENEDOR RESTRICTIVO (CADA VISTA DICTA SU TAMAÑO) -->
+    <div class="animate-fade-in" style="min-height: 80vh;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="text-center py-4 text-muted">
+        <small>&copy; 2026 MathAI. Plataforma Educativa con IA.</small>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SortableJS - Drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js"></script>
+    <script>
+        // Apply saved theme/font preferences
+        (function() {
+            const tema = '{{ config_usuario.tema if config_usuario else "claro" }}';
+            const fuente = '{{ config_usuario.tamano_fuente if config_usuario else "normal" }}';
+            document.documentElement.setAttribute('data-theme', tema);
+            document.documentElement.setAttribute('data-fontsize', fuente);
+        })();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

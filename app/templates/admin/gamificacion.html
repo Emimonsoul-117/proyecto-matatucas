@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container main-content animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-controller text-primary me-2"></i>Gestión de Gamificación</h2>
+            <p class="text-muted mb-0">Administra tienda e insignias del sistema.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.nuevo_articulo') }}" class="btn btn-primary">
+                <i class="bi bi-cart-plus me-1"></i> Nuevo Artículo
+            </a>
+            <a href="{{ url_for('admin.nueva_insignia') }}" class="btn btn-outline-primary">
+                <i class="bi bi-award me-1"></i> Nueva Insignia
+            </a>
+        </div>
+    </div>
+
+    <!-- Pestañas -->
+    <ul class="nav nav-pills mb-4" id="gamificacionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tienda-tab" data-bs-toggle="pill" data-bs-target="#tienda" type="button" role="tab" aria-controls="tienda" aria-selected="true"><i class="bi bi-shop me-1"></i> Artículos de Tienda</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="insignias-tab" data-bs-toggle="pill" data-bs-target="#insignias" type="button" role="tab" aria-controls="insignias" aria-selected="false"><i class="bi bi-shield-fill-check me-1"></i> Insignias</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="gamificacionTabsContent">
+        <!-- Tab Tienda -->
+        <div class="tab-pane fade show active" id="tienda" role="tabpanel" aria-labelledby="tienda-tab" tabindex="0">
+            <div class="card shadow-sm rounded-4 border-0" style="background: #FFFFFF !important; border: 1px solid rgba(0,0,0,0.08) !important;">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Icono / Nombre</th>
+                                <th>Tipo</th>
+                                <th>Rareza</th>
+                                <th>Precio</th>
+                                <th>Estado</th>
+                                <th class="text-end pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for art in articulos_tienda %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm me-3 bg-light rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 1.5rem;">
+                                            {% if art.icono and art.icono.startswith('bi-') %}
+                                                <i class="bi {{ art.icono }} text-primary"></i>
+                                            {% else %}
+                                                {{ art.icono }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">{{ art.nombre }}</div>
+                                            <div class="text-muted small">{{ art.descripcion[:50] }}...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ art.tipo|capitalize }}</span></td>
+                                <td><span class="badge {{ 'bg-success' if art.rareza == 'comun' else 'bg-info' if art.rareza == 'raro' else 'bg-warning' if art.rareza == 'epico' else 'bg-danger' }}">{{ art.rareza|capitalize }}</span></td>
+                                <td><i class="bi bi-coin text-warning me-1"></i>{{ art.precio }}</td>
+                                <td>
+                                    {% if art.activo %}
+                                    <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form action="{{ url_for('admin.eliminar_gamificacion', tipo='articulo', id=art.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar este artículo? Estudiantes podrían tenerlo en inventario.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Aún no hay artículos creados. <a href="{{ url_for('admin.nuevo_articulo') }}">Crea el primero</a>.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Insignias -->
+        <div class="tab-pane fade" id="insignias" role="tabpanel" aria-labelledby="insignias-tab" tabindex="0">
+            <div class="card shadow-sm rounded-4 border-0" style="background: #FFFFFF !important; border: 1px solid rgba(0,0,0,0.08) !important;">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Icono / Nombre</th>
+                                <th>Criterio Técnico</th>
+                                <th>Nivel Req.</th>
+                                <th class="text-end pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ins in insignias %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm me-3 bg-light rounded-circle d-flex align-items-center justify-content-center border" style="width: 40px; height: 40px; font-size: 1.5rem;">
+                                            {% if ins.icono and ins.icono.startswith('bi-') %}
+                                                <i class="bi {{ ins.icono }} text-warning"></i>
+                                            {% else %}
+                                                {{ ins.icono }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">{{ ins.nombre }}</div>
+                                            <div class="text-muted small">{{ ins.descripcion[:50] }}...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><code>{{ ins.criterio }}</code></td>
+                                <td>Lv {{ ins.nivel_requerido }}</td>
+                                <td class="text-end pe-4">
+                                    <form action="{{ url_for('admin.eliminar_gamificacion', tipo='insignia', id=ins.id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta insignia? Estudiantes perderán el logro si ya la tenían.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Aún no hay insignias creadas. <a href="{{ url_for('admin.nueva_insignia') }}">Crea la primera</a>.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

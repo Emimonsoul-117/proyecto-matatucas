@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* ───── VARIABLES MARCA ───── */
+    :root {
+        --brand-navy:    #0B2545;
+        --brand-blue:    #1B396A;
+        --brand-orange:  #FF7A00;
+        --brand-green:   #10B981;
+        --brand-white:   #FFFFFF;
+        --brand-bg:      #F0F4F8;
+    }
+
+    /* ───── HERO BANNER ───── */
+    .perfil-hero {
+        background: linear-gradient(135deg, #071B36 0%, #0B2545 60%, #1B396A 100%);
+        border-bottom: 5px solid var(--brand-orange);
+        padding: 2.5rem 3rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .perfil-avatar-wrap {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 4px solid var(--brand-orange);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.08);
+        overflow: hidden;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 6px rgba(255,122,0,0.2), 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .perfil-hero-info { flex: 1; min-width: 200px; }
+    .perfil-hero-info h2 {
+        font-size: 2rem;
+        font-weight: 900;
+        margin-bottom: 0.15rem;
+        color: #FFFFFF;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        letter-spacing: -0.5px;
+    }
+    .perfil-hero-info .hero-sub {
+        color: #93C5FD;   /* azul claro visible sobre oscuro */
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .hero-stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 50px;
+        padding: 0.35rem 1rem;
+        font-weight: 800;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        margin-right: 0.4rem;
+    }
+    /* Pills sólidas — máximo contraste */
+    .hero-stat-pill.white  { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35); color: #FFFFFF; }
+    .hero-stat-pill.orange { background: rgba(255,122,0,0.25);   border: 1px solid var(--brand-orange);    color: #FFB347; }
+    .hero-stat-pill.green  { background: rgba(16,185,129,0.25);  border: 1px solid var(--brand-green);     color: #6EE7B7; }
+
+    /* ───── STATS ROW ───── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .stat-box {
+        background: #FFFFFF;
+        border-radius: 14px;
+        padding: 1.25rem 1rem;
+        text-align: center;
+        border: 1px solid rgba(0,0,0,0.07);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+    }
+    .stat-box.navy::before   { background: var(--brand-navy); }
+    .stat-box.orange::before { background: var(--brand-orange); }
+    .stat-box.green::before  { background: var(--brand-green); }
+    .stat-box.blue::before   { background: #3B82F6; }
+    .stat-box:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+    .stat-box .stat-val {
+        font-size: 2.1rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 0.35rem;
+    }
+    .stat-box .stat-lbl {
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: #94A3B8;
+    }
+    .stat-box.navy   .stat-val { color: var(--brand-navy); }
+    .stat-box.orange .stat-val { color: var(--brand-orange); }
+    .stat-box.green  .stat-val { color: var(--brand-green); }
+    .stat-box.blue   .stat-val { color: #3B82F6; }
+
+    /* ───── SECCIÓN DE BARRA XP ───── */
+    .xp-panel {
+        background: #FFFFFF;
+        border-radius: 14px;
+        padding: 1.5rem 1.75rem;
+        border: 1px solid rgba(0,0,0,0.07);
+        border-left: 4px solid var(--brand-green);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        margin-bottom: 1.25rem;
+    }
+    .xp-panel .xp-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0F172A;
+    }
+    .xp-panel .xp-level-tag {
+        background: rgba(16,185,129,0.1);
+        color: var(--brand-green);
+        border: 1px solid rgba(16,185,129,0.25);
+        border-radius: 50px;
+        padding: 2px 10px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        margin-left: 0.5rem;
+    }
+    .xp-bar-track {
+        background: #E2E8F0;
+        border-radius: 50px;
+        height: 16px;
+        overflow: hidden;
+        margin-top: 0.75rem;
+    }
+    .xp-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--brand-green), #34D399);
+        border-radius: 50px;
+        transition: width 1s ease;
+        position: relative;
+    }
+    .xp-bar-fill::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+        animation: xp-shimmer 2s infinite;
+    }
+    @keyframes xp-shimmer {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    /* ───── INFO ACADÉMICA ───── */
+    .info-academica-panel {
+        background: linear-gradient(135deg, #EFF6FF, #F0FDF4);
+        border-radius: 14px;
+        padding: 1rem 1.5rem;
+        border: 1px solid rgba(16,185,129,0.2);
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    .info-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #FFFFFF;
+        border-radius: 50px;
+        padding: 0.4rem 1rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #0B2545;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* ───── VITRINA DE INSIGNIAS ───── */
+    .insignias-section {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid rgba(0,0,0,0.07);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+    .insignias-header {
+        background: linear-gradient(90deg, #071B36, #0B2545);
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid var(--brand-orange);
+    }
+    .insignias-header .title-text {
+        font-size: 1rem;
+        font-weight: 900;
+        color: #FFFFFF;
+        letter-spacing: -0.3px;
+    }
+    .insignias-header .subtitle-text {
+        font-size: 0.8rem;
+        color: #93C5FD;   /* azul claro, visible sobre navy oscuro */
+        font-weight: 500;
+    }
+    .insignias-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+
+    .insignia-card {
+        border-radius: 12px;
+        padding: 1rem 0.75rem;
+        text-align: center;
+        border: 2px solid;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .insignia-card.ganada {
+        background: #FFFFFF;
+        border-color: rgba(16,185,129,0.3);
+        box-shadow: 0 4px 12px rgba(16,185,129,0.08);
+    }
+    .insignia-card.ganada:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(16,185,129,0.15); }
+    .insignia-card.bloqueada {
+        background: #F8FAFC;
+        border-color: rgba(0,0,0,0.06);
+        opacity: 0.65;
+    }
+
+    .insignia-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+    }
+    .insignia-card.ganada .insignia-icon { background: linear-gradient(135deg, #FF7A00, #FBBF24); color: white; }
+    .insignia-card.bloqueada .insignia-icon { background: #E2E8F0; color: #94A3B8; }
+
+    .insignia-nombre { font-size: 0.78rem; font-weight: 800; color: #0F172A; line-height: 1.3; }
+    .insignia-desc   { font-size: 0.68rem; color: #64748B; line-height: 1.35; }
+    .insignia-badge  { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 50px; }
+    .insignia-badge.ok   { background: var(--brand-green); color: white; }
+    .insignia-badge.lock { background: #94A3B8; color: white; }
+
+    /* ───── ACCIONES RÁPIDAS ───── */
+    .quick-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    .btn-brand-navy {
+        background: var(--brand-navy);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .btn-brand-navy:hover { background: var(--brand-orange); color: white; transform: translateY(-2px); }
+    .btn-brand-outline {
+        background: transparent;
+        color: var(--brand-navy);
+        border: 2px solid var(--brand-navy);
+        border-radius: 8px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .btn-brand-outline:hover { background: var(--brand-navy); color: white; }
+</style>
+
+<!-- ── HERO BANNER ── -->
+<div class="perfil-hero">
+    <!-- Avatar -->
+    <div class="perfil-avatar-wrap">
+        {% if es_estudiante and estudiante.avatar_activo %}
+            <span style="font-size: 3rem;">{{ estudiante.avatar_activo }}</span>
+        {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ usuario.nombre }}&background=1B396A&color=fff&size=100"
+                 class="rounded-circle" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">
+        {% endif %}
+    </div>
+
+    <!-- Info central -->
+    <div class="perfil-hero-info">
+        <h2>{{ usuario.nombre }}</h2>
+        <div class="hero-sub">{{ usuario.email }}</div>
+        <div class="mt-2">
+            <span class="hero-stat-pill white">
+                <i class="bi bi-person-badge-fill"></i> {{ usuario.rol|capitalize }}
+            </span>
+            {% if es_estudiante %}
+            <span class="hero-stat-pill orange">
+                <i class="bi bi-trophy-fill"></i> Nivel {{ nivel }}
+            </span>
+            <span class="hero-stat-pill green">
+                <i class="bi bi-fire"></i> {{ estudiante.racha_dias }} días racha
+            </span>
+            <span class="hero-stat-pill white">
+                <i class="bi bi-coin"></i> {{ estudiante.monedas }} Matacoins
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="quick-actions">
+        <a href="{{ url_for('main.configuracion') }}" class="btn-brand-navy">
+            <i class="bi bi-gear-fill"></i> Configurar
+        </a>
+        <a href="{{ url_for('main.tienda') }}" class="btn-brand-outline" style="border-color:rgba(255,255,255,0.4);color:white;">
+            <i class="bi bi-shop-window"></i> Tienda
+        </a>
+    </div>
+</div>
+
+<!-- ── CONTENIDO PRINCIPAL ── -->
+<div class="container-fluid px-4 py-4" style="max-width:1400px; margin:0 auto; background: #F0F4F8; min-height: calc(100vh - 200px);">
+
+    {% if es_estudiante %}
+
+    <!-- INFO ACADÉMICA -->
+    {% if estudiante.carrera %}
+    <div class="info-academica-panel">
+        <div class="d-flex gap-2 flex-wrap">
+            <span class="info-pill"><i class="bi bi-mortarboard-fill text-primary"></i> {{ estudiante.carrera }}</span>
+            {% if estudiante.semestre %}<span class="info-pill"><i class="bi bi-calendar3"></i> Semestre {{ estudiante.semestre }}</span>{% endif %}
+            {% if estudiante.grupo %}<span class="info-pill"><i class="bi bi-people-fill text-success"></i> Grupo {{ estudiante.grupo }}</span>{% endif %}
+        </div>
+        <a href="{{ url_for('main.configuracion') }}" class="btn-brand-outline" style="font-size:0.82rem; padding:0.4rem 1rem;">
+            <i class="bi bi-pencil-square"></i> Editar
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+        <div class="stat-box navy">
+            <div class="stat-val">{{ nivel }}</div>
+            <div class="stat-lbl">Nivel Actual</div>
+        </div>
+        <div class="stat-box orange">
+            <div class="stat-val">{{ estudiante.puntos_totales }}</div>
+            <div class="stat-lbl">Puntos XP</div>
+        </div>
+        <div class="stat-box green">
+            <div class="stat-val">{{ estudiante.racha_dias }}</div>
+            <div class="stat-lbl">Días de Racha</div>
+        </div>
+        <div class="stat-box blue">
+            <div class="stat-val">{{ estudiante.monedas }}</div>
+            <div class="stat-lbl">Matacoins</div>
+        </div>
+        <div class="stat-box navy">
+            <div class="stat-val">{{ mis_insignias_ids|length }}</div>
+            <div class="stat-lbl">Insignias</div>
+        </div>
+    </div>
+
+    <!-- BARRA DE EXPERIENCIA -->
+    <div class="xp-panel">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="xp-title">
+                    <i class="bi bi-star-fill" style="color:var(--brand-orange); margin-right:6px;"></i>Progreso de Experiencia
+                </span>
+                <span class="xp-level-tag">Nv. {{ nivel }} → Nv. {{ nivel + 1 }}</span>
+            </div>
+            <div class="text-end">
+                <span style="font-size:1.15rem; font-weight:900; color: #0F172A;">{{ estudiante.puntos_totales }} XP</span>
+                <br>
+                <small style="color:#64748B; font-weight:600;">Faltan <strong style="color:var(--brand-navy);">{{ puntos_next }} XP</strong></small>
+            </div>
+        </div>
+        <div class="xp-bar-track">
+            {% set porcentaje = ((1000 - puntos_next) / 1000 * 100) | round(1) %}
+            <div class="xp-bar-fill" style="width: {{ porcentaje }}%;"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+            <small class="text-muted fw-semibold">{{ porcentaje }}% completado</small>
+            <small class="text-muted">Nivel {{ nivel + 1 }} en {{ puntos_next }} XP</small>
+        </div>
+    </div>
+
+    <!-- VITRINA DE INSIGNIAS -->
+    <div class="insignias-section">
+        <div class="insignias-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-trophy-fill fs-5" style="color:#FFB347;"></i>
+                <span class="title-text">Medallas e Insignias</span>
+                <span class="badge" style="background:rgba(255,122,0,0.35); color:#FFD580; font-size:0.75rem; font-weight:800;">{{ mis_insignias_ids|length }}/{{ insignias|length }}</span>
+            </div>
+            <span class="subtitle-text">Consigue XP para desbloquear más</span>
+        </div>
+        <div class="insignias-grid">
+            {% for insignia in insignias %}
+            {% set ganada = insignia.id in mis_insignias_ids %}
+            <div class="insignia-card {{ 'ganada' if ganada else 'bloqueada' }}">
+                <div class="insignia-icon">
+                    <i class="bi {{ insignia.icono }}"></i>
+                </div>
+                <div class="insignia-nombre">{{ insignia.nombre }}</div>
+                <div class="insignia-desc">{{ insignia.descripcion }}</div>
+                <span class="insignia-badge {{ 'ok' if ganada else 'lock' }}">
+                    {{ 'OBTENIDA' if ganada else 'BLOQUEADA' }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% else %}
+    <!-- PERFIL DE PERSONAL (Docente/Admin) -->
+    <div class="card shadow-sm mt-4" style="background:#FFFFFF; border:1px solid rgba(0,0,0,0.08); border-radius:14px; max-width:600px;">
+        <div class="card-body p-4">
+            <h4 class="fw-bold mb-2" style="color: var(--brand-navy);">
+                <i class="bi bi-person-workspace me-2 text-primary"></i>Perfil de Personal
+            </h4>
+            <p class="text-muted mb-3">Como docente o administrador, gestionas la plataforma. No participas en el sistema de puntos e insignias, pero tienes control total sobre el contenido y los estudiantes.</p>
+            <a href="{{ url_for('main.index') }}" class="btn-brand-navy">
+                <i class="bi bi-house-fill"></i> Ir al Inicio
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

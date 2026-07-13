@@ -1,0 +1,229 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+from sqlalchemy import text
+from config import configuracion
+
+# Inicialización de extensiones
+bd = SQLAlchemy()
+login_manager = LoginManager()
+csrf = CSRFProtect()
+
+login_manager.login_view = 'auth.login_page'
+login_manager.login_message = ""
+
+
+def _ensure_codigo_curso_column(app):
+    """Si la tabla cursos no tiene codigo_curso (BD creada antes del cambio de modelo), la añade."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'cursos'
+                          AND COLUMN_NAME = 'codigo_curso'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos ADD COLUMN codigo_curso VARCHAR(16) NULL UNIQUE AFTER id"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning(
+                "No se pudo asegurar la columna codigo_curso: %s. "
+                "Si ves error 1054, ejecuta sql_alter_codigo_curso.sql en MySQL.",
+                exc,
+            )
+
+
+def _ensure_bloqueado_inscripciones_column(app):
+    """Si la tabla inscripciones no tiene bloqueado (BD antigua), la añade."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'inscripciones'
+                          AND COLUMN_NAME = 'bloqueado'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE inscripciones "
+                            "ADD COLUMN bloqueado BOOLEAN NOT NULL DEFAULT FALSE AFTER progreso"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning(
+                "No se pudo asegurar la columna inscripciones.bloqueado: %s. "
+                "Si ves error de esquema, revisa el ALTER manualmente.",
+                exc,
+            )
+def _ensure_estado_cursos_column(app):
+    """Asegura columna estado en cursos (sin 'revision' — publicación directa)."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'cursos'
+                          AND COLUMN_NAME = 'estado'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos ADD COLUMN estado ENUM('borrador', 'publicado') NOT NULL DEFAULT 'borrador' AFTER fecha_creacion"
+                        )
+                    )
+                else:
+                    # Migrar cursos en 'revision' a 'borrador' y actualizar el ENUM
+                    conn.execute(text("UPDATE cursos SET estado = 'borrador' WHERE estado = 'revision'"))
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos MODIFY COLUMN estado ENUM('borrador', 'publicado') NOT NULL DEFAULT 'borrador'"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning("No se pudo asegurar la columna cursos.estado: %s", exc)
+
+
+def _ensure_ejercicio_tipo_enum(app):
+    """Amplía el ENUM de ejercicios.tipo con los nuevos tipos de pregunta."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE ejercicios MODIFY COLUMN tipo "
+                        "ENUM('opcion_multiple', 'verdadero_falso', 'numerico', "
+                        "'completar_texto', 'ordenar_pasos', 'respuesta_corta') NOT NULL"
+                    )
+                )
+        except Exception as exc:
+            app.logger.warning(
+                "No se pudo ampliar el ENUM ejercicios.tipo: %s. "
+                "Si falla al guardar ejercicios nuevos, ejecuta el ALTER manualmente.",
+                exc,
+            )
+
+
+def _ensure_visibilidad_cursos_column(app):
+    """Añade la columna visibilidad a cursos (global/privado)."""
+    with app.app_context():
+        try:
+            with bd.engine.begin() as conn:
+                n = conn.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'cursos'
+                          AND COLUMN_NAME = 'visibilidad'
+                        """
+                    )
+                ).scalar()
+                if n == 0:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE cursos ADD COLUMN visibilidad ENUM('global', 'privado') NOT NULL DEFAULT 'privado' AFTER estado"
+                        )
+                    )
+        except Exception as exc:
+            app.logger.warning("No se pudo asegurar la columna cursos.visibilidad: %s", exc)
+
+
+def crear_app(nombre_config='por_defecto'):
+    app = Flask(__name__)
+    app.config.from_object(configuracion[nombre_config])
+
+    # Inicializar extensiones
+    bd.init_app(app)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+    
+    _ensure_codigo_curso_column(app)
+
+    _ensure_bloqueado_inscripciones_column(app)
+    _ensure_estado_cursos_column(app)
+    _ensure_visibilidad_cursos_column(app)
+    _ensure_ejercicio_tipo_enum(app)
+
+    # Crea tablas nuevas faltantes (no altera tablas existentes).
+    # Esto permite que nuevas entidades (p. ej. intentos_ejercicios) aparezcan
+    # sin requerir migraciones completas mientras siga el esquema actual.
+    with app.app_context():
+        from . import modelos  # noqa: F401
+        bd.create_all()
+        modelos.migrar_usuarios_sin_numero_control()
+
+    # Registro de Blueprints
+    from .auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
+
+    from .main import main as main_blueprint
+    app.register_blueprint(main_blueprint)
+
+    from .cursos import cursos as cursos_blueprint
+    app.register_blueprint(cursos_blueprint, url_prefix='/cursos')
+
+    from .admin import admin as admin_blueprint
+    app.register_blueprint(admin_blueprint, url_prefix='/admin')
+
+    from .docente import docente as docente_blueprint
+    app.register_blueprint(docente_blueprint, url_prefix='/docente')
+
+    # Context processor: inyectar configuración del usuario en todos los templates
+    @app.context_processor
+    def inject_config_usuario():
+        from flask_login import current_user as cu
+        config = None
+        falta_info = False
+        if cu.is_authenticated:
+            from .modelos import ConfiguracionUsuario, Estudiante
+            config = ConfiguracionUsuario.query.get(cu.id)
+            # Verificar si es estudiante y le falta info académica
+            if cu.rol == 'estudiante':
+                est = Estudiante.query.get(cu.id)
+                if est and not est.carrera:
+                    falta_info = True
+        return dict(config_usuario=config, falta_info_academica=falta_info)
+
+    # Error handlers
+    from flask import render_template
+    @app.errorhandler(404)
+    def pagina_no_encontrada(e):
+        return render_template('errores/404.html'), 404
+
+    @app.errorhandler(403)
+    def acceso_denegado(e):
+        return render_template('errores/403.html'), 403
+
+    @app.errorhandler(500)
+    def error_interno(e):
+        return render_template('errores/500.html'), 500
+
+    return app
+
+# Cargador de usuario para Flask-Login
+from .modelos import Usuario
+
+@login_manager.user_loader
+def cargar_usuario(user_id):
+    return Usuario.query.get(int(user_id))

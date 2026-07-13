@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --brand-navy:   #0B2545;
+        --brand-blue:   #1B396A;
+        --brand-orange: #FF7A00;
+        --brand-green:  #10B981;
+    }
+
+    /* ── HERO HEADER ── */
+    .config-hero {
+        background: linear-gradient(135deg, #071B36 0%, #0B2545 60%, #1B396A 100%);
+        border-bottom: 5px solid var(--brand-orange);
+        padding: 2rem 3rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .config-hero h1 {
+        font-size: 1.7rem;
+        font-weight: 900;
+        margin: 0;
+        color: #FFFFFF;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .config-hero h1 i { color: var(--brand-orange) !important; }
+    .config-hero .hero-sub {
+        color: #93C5FD;  /* azul claro visible sobre navy */
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    .btn-back-hero {
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s;
+    }
+    .btn-back-hero:hover { background: rgba(255,255,255,0.22); color: white; }
+
+    /* ── LAYOUT 2 COLUMNAS ── */
+    .config-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 1.5rem;
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+        background: #F0F4F8;
+        min-height: calc(100vh - 160px);
+        align-items: start;
+    }
+    @media (max-width: 768px) {
+        .config-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── SIDEBAR NAV ── */
+    .config-nav {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid rgba(0,0,0,0.07);
+        overflow: hidden;
+        position: sticky;
+        top: 80px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+    .config-nav-header {
+        background: linear-gradient(90deg, #071B36, #0B2545);
+        color: #93C5FD;   /* azul claro visible */
+        padding: 0.9rem 1.25rem;
+        font-weight: 900;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-bottom: 2px solid var(--brand-orange);
+    }
+    .config-nav a {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.85rem 1.25rem;
+        text-decoration: none;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-left: 3px solid transparent;
+        transition: all 0.15s;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .config-nav a:hover { background: #F8FAFC; color: var(--brand-navy); border-left-color: var(--brand-orange); }
+    .config-nav a.active { background: #EFF6FF; color: var(--brand-navy); border-left-color: var(--brand-navy); font-weight: 800; }
+
+    /* ── CARDS DE SECCIÓN ── */
+    .config-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid rgba(0,0,0,0.07);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+        scroll-margin-top: 90px;
+    }
+    .config-card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 2px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        background: #F8FAFC;
+    }
+    .config-card-header .icon-box {
+        width: 36px; height: 36px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .icon-box.navy   { background: rgba(11,37,69,0.1);  color: var(--brand-navy); }
+    .icon-box.orange { background: rgba(255,122,0,0.12); color: var(--brand-orange); }
+    .icon-box.green  { background: rgba(16,185,129,0.12);color: var(--brand-green); }
+    .icon-box.blue   { background: rgba(59,130,246,0.12);color: #3B82F6; }
+
+    .config-card-header h5 {
+        margin: 0;
+        font-weight: 900;
+        font-size: 0.98rem;
+        color: #0F172A;  /* negro puro, siempre visible sobre fondo claro */
+        letter-spacing: -0.2px;
+    }
+    .config-card-body { padding: 1.5rem; }
+
+    /* ── OPTION CARDS (Tema/Fuente) ── */
+    .option-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .option-card {
+        cursor: pointer;
+        border: 2px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 0.75rem 1.25rem;
+        min-width: 110px;
+        text-align: center;
+        transition: all 0.15s;
+        background: #FFFFFF;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #64748B;
+    }
+    .option-card:hover { border-color: var(--brand-orange); color: var(--brand-orange); background: #FFF9F5; }
+    .option-card.active { border-color: var(--brand-navy); background: #EFF6FF; color: var(--brand-navy); box-shadow: 0 0 0 3px rgba(11,37,69,0.08); }
+    .option-preview { width: 56px; height: 36px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); }
+
+    /* ── TOGGLE ROW ── */
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #F1F5F9;
+        gap: 1rem;
+    }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-row p { margin: 0; font-weight: 700; color: #0F172A; font-size: 0.92rem; }
+    .toggle-row small { color: #64748B; font-size: 0.8rem; display: block; margin-top: 2px; }
+
+    .form-switch .form-check-input {
+        width: 3rem; height: 1.5rem; cursor: pointer;
+    }
+    .form-switch .form-check-input:checked {
+        background-color: var(--brand-green) !important;
+        border-color: var(--brand-green) !important;
+    }
+
+    /* ── CAMPOS ACADÉMICOS ── */
+    .form-select, .form-control {
+        border: 2px solid #E2E8F0 !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        color: #0F172A !important;
+        transition: border-color 0.15s !important;
+    }
+    .form-select:focus, .form-control:focus {
+        border-color: var(--brand-navy) !important;
+        box-shadow: 0 0 0 4px rgba(11,37,69,0.08) !important;
+    }
+    .form-label { font-weight: 700 !important; color: #475569 !important; font-size: 0.82rem !important; text-transform: uppercase !important; letter-spacing: 0.4px !important; }
+
+    /* ── ALERT ACADÉMICA ── */
+    .alerta-academica {
+        background: #FFFBEB;
+        border: 2px solid #FDE68A;
+        border-left: 5px solid var(--brand-orange);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    /* ── BTN GUARDAR ── */
+    .btn-guardar {
+        background: linear-gradient(135deg, var(--brand-navy), var(--brand-blue));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-guardar:hover {
+        background: linear-gradient(135deg, var(--brand-orange), #FF9500);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(255,122,0,0.25);
+    }
+</style>
+
+<!-- HERO -->
+<div class="config-hero">
+    <div>
+        <h1><i class="bi bi-gear-fill me-2" style="color: var(--brand-orange);"></i>Configuración</h1>
+        <div class="hero-sub">Personaliza tu experiencia en Matatucas</div>
+    </div>
+    <a href="{{ url_for('main.perfil') }}" class="btn-back-hero">
+        <i class="bi bi-arrow-left"></i> Volver al Perfil
+    </a>
+</div>
+
+<!-- LAYOUT -->
+<div class="config-layout">
+
+    <!-- SIDEBAR NAV -->
+    <div class="config-nav">
+        <div class="config-nav-header"><i class="bi bi-list-ul me-1"></i> Secciones</div>
+        {% if es_estudiante %}<a href="#info-academica" class="active"><i class="bi bi-mortarboard-fill"></i> Académica</a>{% endif %}
+        <a href="#apariencia"><i class="bi bi-palette-fill"></i> Apariencia</a>
+        <a href="#privacidad"><i class="bi bi-shield-lock-fill"></i> Privacidad</a>
+        <a href="#notificaciones"><i class="bi bi-bell-fill"></i> Notificaciones</a>
+    </div>
+
+    <!-- FORMULARIO -->
+    <form method="POST" action="{{ url_for('main.configuracion') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <!-- ALERTA ACADÉMICA -->
+        {% if es_estudiante and not estudiante.carrera %}
+        <div class="alerta-academica">
+            <i class="bi bi-exclamation-triangle-fill fs-4" style="color: var(--brand-orange); flex-shrink:0;"></i>
+            <div>
+                <strong style="color: #92400E;">¡Completa tu información académica!</strong>
+                <div style="font-size:0.85rem; color:#78350F; margin-top:2px;">Esto nos ayuda a personalizar tu experiencia de aprendizaje.</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── INFO ACADÉMICA ── -->
+        {% if es_estudiante %}
+        <div class="config-card" id="info-academica">
+            <div class="config-card-header">
+                <div class="icon-box navy"><i class="bi bi-mortarboard-fill"></i></div>
+                <h5>Información Académica</h5>
+            </div>
+            <div class="config-card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="carrera" class="form-label">Carrera</label>
+                        <select class="form-select" id="carrera" name="carrera">
+                            <option value="" disabled {{ 'selected' if not estudiante.carrera }}>Selecciona una carrera</option>
+                            {% set carreras_itst = [
+                                "Ingeniería Industrial",
+                                "Ingeniería en Sistemas Computacionales",
+                                "Ingeniería en Animación Digital y Efectos Visuales",
+                                "Ingeniería en Gestión Empresarial",
+                                "Ingeniería Mecatrónica",
+                                "Ingeniería Informática",
+                                "Ingeniería en Industrias Alimentarias",
+                                "Licenciatura en Turismo"
+                            ] %}
+                            {% for c in carreras_itst %}
+                                <option value="{{ c }}" {{ 'selected' if estudiante.carrera == c }}>{{ c }}</option>
+                            {% endfor %}
+                            <option value="Otra" {{ 'selected' if estudiante.carrera and estudiante.carrera not in carreras_itst }}>Otra carrera</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="semestre" class="form-label">Semestre</label>
+                        <select class="form-select" id="semestre" name="semestre">
+                            <option value="" disabled {{ 'selected' if not estudiante.semestre }}>Semestre</option>
+                            {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {{ 'selected' if estudiante.semestre == i }}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="grupo" class="form-label">Grupo</label>
+                        <input type="text" class="form-control" id="grupo" name="grupo"
+                            value="{{ estudiante.grupo or '' }}" placeholder="Ej. A">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── APARIENCIA ── -->
+        <div class="config-card" id="apariencia">
+            <div class="config-card-header">
+                <div class="icon-box orange"><i class="bi bi-palette-fill"></i></div>
+                <h5>Apariencia</h5>
+            </div>
+            <div class="config-card-body">
+                <div class="mb-4">
+                    <label class="form-label">Tema de interfaz</label>
+                    <div class="option-grid">
+                        <label class="option-card {{ 'active' if config.tema == 'claro' }}" for="tema_claro">
+                            <input type="radio" name="tema" id="tema_claro" value="claro" {{ 'checked' if config.tema == 'claro' }} class="d-none">
+                            <div class="option-preview" style="background: linear-gradient(135deg,#f8fafc,#e2e8f0);"></div>
+                            <i class="bi bi-sun-fill fs-5"></i>
+                            Claro
+                        </label>
+                        <label class="option-card {{ 'active' if config.tema == 'oscuro' }}" for="tema_oscuro">
+                            <input type="radio" name="tema" id="tema_oscuro" value="oscuro" {{ 'checked' if config.tema == 'oscuro' }} class="d-none">
+                            <div class="option-preview" style="background: linear-gradient(135deg,#1e293b,#0f172a);"></div>
+                            <i class="bi bi-moon-stars-fill fs-5"></i>
+                            Oscuro
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Tamaño de fuente</label>
+                    <div class="option-grid">
+                        {% for val, label, sz in [('pequeno','Pequeño','0.82rem'),('normal','Normal','1rem'),('grande','Grande','1.18rem')] %}
+                        <label class="option-card {{ 'active' if config.tamano_fuente == val }}" for="fuente_{{ val }}">
+                            <input type="radio" name="tamano_fuente" id="fuente_{{ val }}" value="{{ val }}" {{ 'checked' if config.tamano_fuente == val }} class="d-none">
+                            <span style="font-size:{{ sz }}; font-weight:900; line-height:1;">Aa</span>
+                            {{ label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PRIVACIDAD ── -->
+        <div class="config-card" id="privacidad">
+            <div class="config-card-header">
+                <div class="icon-box green"><i class="bi bi-shield-lock-fill"></i></div>
+                <h5>Privacidad</h5>
+            </div>
+            <div class="config-card-body">
+                <div class="toggle-row">
+                    <div>
+                        <p>Ocultar del ranking público</p>
+                        <small>Tu nombre no aparecerá en el Leaderboard para otros estudiantes.</small>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox"
+                            id="ocultar_ranking" name="ocultar_ranking"
+                            {{ 'checked' if config.ocultar_ranking }}>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── NOTIFICACIONES ── -->
+        <div class="config-card" id="notificaciones">
+            <div class="config-card-header">
+                <div class="icon-box blue"><i class="bi bi-bell-fill"></i></div>
+                <h5>Notificaciones</h5>
+            </div>
+            <div class="config-card-body">
+                <div class="toggle-row">
+                    <div>
+                        <p>Nuevos cursos disponibles</p>
+                        <small>Recibe avisos cuando se publiquen nuevos cursos en la plataforma.</small>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox"
+                            id="notif_nuevos_cursos" name="notif_nuevos_cursos"
+                            {{ 'checked' if config.notif_nuevos_cursos }}>
+                    </div>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <p>Recordatorio de racha</p>
+                        <small>Recibe un aviso cuando tu racha de estudio está en riesgo de perderse.</small>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox"
+                            id="notif_racha" name="notif_racha"
+                            {{ 'checked' if config.notif_racha }}>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GUARDAR -->
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn-guardar">
+                <i class="bi bi-check-circle-fill"></i> Guardar Configuración
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    // Highlight active nav section on scroll
+    const sections = document.querySelectorAll('.config-card[id]');
+    const navLinks = document.querySelectorAll('.config-nav a');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(s => {
+            if (window.scrollY >= s.offsetTop - 120) current = s.id;
+        });
+        navLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+        });
+    });
+
+    // Toggle active class on option cards
+    document.querySelectorAll('.option-card input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const name = this.name;
+            document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                r.closest('.option-card').classList.remove('active');
+            });
+            this.closest('.option-card').classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

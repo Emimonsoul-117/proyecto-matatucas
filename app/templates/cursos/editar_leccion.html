@@ -1,0 +1,710 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Quill.js CSS -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    /* HEADER DARK MODE INSTITUCIONAL COMPACTO */
+    .hero-header-dark {
+        background: linear-gradient(135deg, #0B2545 0%, #17366b 100%);
+        box-shadow: 0 10px 30px rgba(11,37,69,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-header-dark::after {
+        content: ''; position: absolute; right: -20px; top: -50px;
+        width: 150px; height: 150px; background: rgba(255,255,255,0.03); border-radius: 50%;
+    }
+
+    /* TARJETAS FORMULARIO LATERALES */
+    .form-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .form-control-premium {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0F172A;
+        transition: 0.3s;
+        width: 100%;
+    }
+    .form-control-premium:focus {
+        background: #ffffff; border-color: #1B396A; box-shadow: 0 0 0 4px rgba(27,57,106, 0.15); outline: none;
+    }
+
+    /* BOTONES DE HERRAMIENTA LATERALES */
+    .btn-notion {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        color: #cbd5e1;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+    }
+    .btn-notion:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .btn-notion.teoria:hover { background: #2563eb; color: #fff; border-color: #3b82f6; }
+    .btn-notion.video:hover { background: #e11d48; color: #fff; border-color: #f43f5e; }
+    .btn-notion.ejercicio:hover { background: #16a34a; color: #fff; border-color: #22c55e; }
+    .btn-notion.recurso:hover { background: #0891b2; color: #fff; border-color: #06b6d4; }
+
+    /* ZONA DE LIENZO VACÍO */
+    .drop-zone {
+        border: 3px dashed #94a3b8;
+        border-radius: 16px;
+        padding: 4rem 2rem;
+        text-align: center;
+        background: rgba(255,255,255,0.6);
+        backdrop-filter: blur(5px);
+        transition: 0.3s;
+    }
+    .drop-zone:hover { border-color: #1B396A; background: #ffffff; }
+
+    /* BLOQUES DINÁMICOS FUERTES */
+    .seccion-bloque {
+        border: none;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        transition: 0.2s;
+    }
+
+    .seccion-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 14px 20px;
+        font-weight: 900;
+        font-size: 1.1rem;
+        color: #ffffff;
+    }
+
+    .sec-teoria .seccion-header { background: linear-gradient(90deg, #1e3a8a, #3b82f6); }
+    .sec-video .seccion-header { background: linear-gradient(90deg, #881337, #f43f5e); }
+    .sec-ejercicio .seccion-header { background: linear-gradient(90deg, #14532d, #22c55e); }
+    .sec-recurso .seccion-header { background: linear-gradient(90deg, #164e63, #06b6d4); }
+
+    .seccion-mover { cursor: grab; font-size: 1.5rem; color: rgba(255,255,255,0.5) !important; }
+    .seccion-mover:hover { color: #ffffff !important; }
+
+    .seccion-body { padding: 25px; border: 2px solid #f1f5f9; border-top: none; border-radius: 0 0 16px 16px; }
+
+    .btn-blk-ctrl {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #ffffff;
+        height: 34px; width: 34px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        transition: 0.2s;
+    }
+    .btn-blk-ctrl:hover { background: #ffffff; color: #0f172a; }
+    .btn-blk-ctrl.danger:hover { background: #fee2e2; color: #ef4444; border: none; }
+
+    .form-control-bloque {
+        background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-weight: 700; color: #0f172a; transition: 0.2s; width: 100%; font-size: 1rem;
+    }
+    .form-control-bloque:focus { background: #fff; border-color: #1B396A; box-shadow: 0 0 0 4px rgba(27,57,106, 0.1); outline: none; }
+
+    .yt-preview { width: 100%; border-radius: 12px; margin-top: 15px; background: #000; aspect-ratio: 16/9; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .opciones-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+
+    .ql-toolbar.ql-snow { border-radius: 12px 12px 0 0; border: 2px solid #e2e8f0; background: #f8fafc; padding: 10px; }
+    .ql-container.ql-snow { border-radius: 0 0 12px 12px; border: 2px solid #e2e8f0; border-top: none; font-size: 1.05rem; background: #ffffff; }
+    .ql-editor { min-height: 200px; padding: 20px; }
+
+    /* FIX FOR POSITION STICKY BY OVERRIDING TRANSFORM ANIMATION */
+    .animate-fade-in {
+        transform: none !important;
+        animation: fadeInOnly var(--transition-slow) forwards !important;
+    }
+    @keyframes fadeInOnly {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @media (min-width: 992px) {
+        .sticky-sidebar-container {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 85px;
+            padding-right: 5px;
+        }
+    }
+</style>
+
+<div class="container-fluid px-4 pb-4" style="max-width:1400px; padding-top: 20px !important;">
+    
+    <!-- ENCABEZADO COMPACTO DE CAPÍTULO -->
+    <div class="hero-header-dark mb-4 py-3 px-4 rounded-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fw-bold" style="font-size: 0.85rem;">
+                    <li class="breadcrumb-item"><a href="{{ url_for('cursos.lista_cursos') }}" class="text-white-50 text-decoration-none">Cursos</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="text-white-50 text-decoration-none">{{ curso.titulo }}</a></li>
+                    <li class="breadcrumb-item active text-warning">Editar Lección</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bolder text-white mb-0" style="text-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+                <i class="bi bi-file-earmark-diff-fill text-warning me-2"></i> Editar Lección
+            </h3>
+        </div>
+        <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-sm text-white fw-bold px-3 py-2 border" style="background: rgba(255,255,255,0.05); border-radius: 8px;">
+            <i class="bi bi-arrow-left me-1"></i> Volver al curso
+        </a>
+    </div>
+
+    <!-- PANTALLA DIVIDIDA: SIDEBAR STICKY Y LIENZO INFINITO -->
+    <form method="POST" id="formLeccion">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="secciones_json" id="secciones_json">
+        
+        <div class="row g-4">
+            
+            <!-- ====== COLUMNA IZQUIERDA: CONTROLES FIJOS (Sticky) ====== -->
+            <div class="col-lg-4 col-xl-3">
+                <div class="sticky-sidebar-container">
+                    
+                    <!-- ESTACIÓN DE INYECCIÓN (HERRAMIENTAS) -->
+                    <div class="form-card p-4 shadow-sm" style="border-radius: 16px; background: #0B2545; border: none;">
+                        <h6 class="fw-bolder mb-3 text-white" style="font-size: 0.95rem;">
+                            <i class="bi bi-plus-circle-fill text-warning me-2"></i> Agregar Contenido
+                        </h6>
+                        
+                        <div class="d-flex flex-column gap-2 mb-4">
+                            <button type="button" class="btn-notion teoria" onclick="agregarSeccion('teoria')">
+                                <i class="bi bi-file-earmark-text-fill fs-5"></i> 📝 Texto / Teoría
+                            </button>
+                            <button type="button" class="btn-notion video" onclick="agregarSeccion('video')">
+                                <i class="bi bi-play-btn-fill fs-5"></i> 🎬 Video de YouTube
+                            </button>
+                            <button type="button" class="btn-notion ejercicio" onclick="agregarSeccion('ejercicio')">
+                                <i class="bi bi-pencil-square fs-5"></i> ✏️ Ejercicio / Pregunta
+                            </button>
+                            <button type="button" class="btn-notion recurso" onclick="agregarSeccion('recurso')">
+                                <i class="bi bi-paperclip fs-5"></i> 📎 Recurso / Enlace
+                            </button>
+                        </div>
+
+                        <hr style="border-color: rgba(255,255,255,0.15); margin: 1.5rem 0;">
+                        
+                        <!-- ASISTENTE IA GLOBAL -->
+                        <h6 class="fw-bolder mb-3 text-white" style="font-size: 0.95rem;">
+                            <i class="bi bi-stars text-warning me-2"></i> Generación Completa
+                        </h6>
+                        <button type="button" class="btn btn-warning w-100 fw-bold py-2 mb-3 shadow-sm" style="border-radius: 10px; font-size: 0.85rem;" onclick="generarLeccionCompletaIA()">
+                            <i class="bi bi-magic me-1"></i> Forjar Lección con IA
+                        </button>
+
+                        <hr style="border-color: rgba(255,255,255,0.15); margin: 1.5rem 0;">
+
+                        <!-- BOTÓN DE GUARDAR -->
+                        <button type="submit" class="btn w-100 text-white fw-bolder py-3 shadow-sm" style="background: #10B981; border-radius: 12px; font-size: 1rem; border: none; transition: 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';" onclick="prepararEnvio()">
+                            💾 Guardar Cambios <i class="bi bi-check-circle ms-2 fs-6"></i>
+                        </button>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- ====== COLUMNA DERECHA: LIENZO DE CONSTRUCCIÓN ESTRUCTURAL ====== -->
+            <div class="col-lg-8 col-xl-9">
+                
+                <!-- IDENTIDAD Y ENCABEZADO DE LA LECCIÓN (En el lienzo) -->
+                <div class="form-card p-4 mb-4 shadow-sm" style="border-radius: 16px;">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-9">
+                            <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.75rem;">Título de la Lección</label>
+                            <input type="text" class="form-control-premium" name="titulo" required value="{{ leccion.titulo }}" placeholder="Ej: Introducción a las Ecuaciones Lineales" style="font-size: 1.15rem; padding: 12px 18px;">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.75rem;">Orden de Lección</label>
+                            <div class="d-flex align-items-center">
+                                <span class="bg-light border border-end-0 rounded-start-3 px-3 py-2 text-muted fw-bolder" style="height: 52px; display: flex; align-items: center; border-color: #e2e8f0 !important;">#</span>
+                                <input type="number" class="form-control-premium rounded-start-0" name="orden" value="{{ leccion.orden }}" min="1" required style="border-left: 0; height: 52px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ALERTA GLOBAL IA -->
+                <div id="loadingGlobalIA" class="alert alert-info py-3 mb-4 rounded-3 shadow-sm" style="display:none; background: #e0f2fe; color:#0369a1; border: 1px solid #bae6fd;">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                        <span class="fw-bolder" id="loadingGlobalText" style="font-size: 0.95rem;">Escribiendo contenido y estructurando ejercicios con IA...</span>
+                    </div>
+                </div>
+
+                <div id="secciones-container"></div>
+                
+                <div class="drop-zone shadow-sm" id="dropZone" style="padding: 3rem 2rem; {% if secciones_editor %}display:none;{% endif %}">
+                    <i class="bi bi-journals text-muted" style="font-size: 2.5rem;"></i><br>
+                    <h5 class="fw-bolder text-dark mt-2">Sin contenido aún</h5>
+                    <p class="text-secondary mb-0 fw-semibold">Usa los botones de la izquierda para agregar secciones de contenido a tu lección.</p>
+                </div>
+                
+                <!-- Margen inferior inmenso para que el último div pueda ser desplazado sin problema -->
+                <div style="height: 400px;"></div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<!-- Quill.js JS -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+    let secciones = [];
+    let quillInstances = {};
+    let idCounter = 0;
+
+    const QUILL_TOOLBAR = [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['blockquote', 'code-block'],
+        ['link', 'image'],
+        [{ 'align': [] }],
+        ['clean']
+    ];
+
+    function agregarSeccion(tipo, datos) {
+        const id = 'sec_' + (++idCounter);
+        const sec = { id, tipo };
+        if (datos) Object.assign(sec, datos);
+        secciones.push(sec);
+        renderSecciones();
+        document.getElementById('dropZone').style.display = 'none';
+        
+        // Auto scroll (solo si es sección nueva, no en precarga inicial)
+        if (!datos) {
+            setTimeout(() => { 
+                const block = document.querySelector(`[data-id="${id}"]`); 
+                if(block) {
+                    const navOffset = 120;
+                    const elementPosition = block.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                }
+            }, 100);
+        }
+    }
+
+    function eliminarSeccion(id) {
+        secciones = secciones.filter(s => s.id !== id);
+        delete quillInstances[id];
+        if (secciones.length === 0) document.getElementById('dropZone').style.display = '';
+        renderSecciones();
+    }
+
+    function moverSeccion(id, dir) {
+        const idx = secciones.findIndex(s => s.id === id);
+        if (dir === -1 && idx === 0) return;
+        if (dir === 1 && idx === secciones.length - 1) return;
+        
+        // Guardar contenido Quill actual
+        for (const [qId, quill] of Object.entries(quillInstances)) {
+            const sec = secciones.find(s => s.id === qId);
+            if (sec) sec._quillContent = quill.root.innerHTML;
+        }
+
+        const tmp = secciones[idx];
+        secciones[idx] = secciones[idx + dir];
+        secciones[idx + dir] = tmp;
+        renderSecciones();
+    }
+
+    function renderSecciones() {
+        for (const [id, quill] of Object.entries(quillInstances)) {
+            const sec = secciones.find(s => s.id === id);
+            if (sec) sec._quillContent = quill.root.innerHTML;
+        }
+
+        const container = document.getElementById('secciones-container');
+        container.innerHTML = '';
+        quillInstances = {};
+
+        secciones.forEach((sec, idx) => {
+            const div = document.createElement('div');
+            div.className = 'seccion-bloque sec-' + sec.tipo;
+            div.dataset.id = sec.id;
+
+            const iconos = { 
+                teoria: '<i class="bi bi-file-earmark-text-fill text-white fs-4 me-1"></i>', 
+                video: '<i class="bi bi-play-btn-fill text-white fs-4 me-1"></i>', 
+                ejercicio: '<i class="bi bi-pencil-square text-white fs-4 me-1"></i>', 
+                recurso: '<i class="bi bi-paperclip text-white fs-4 me-1"></i>' 
+            };
+            const labels = { 
+                teoria: 'Texto / Teoría', 
+                video: '🎬 Video de YouTube', 
+                ejercicio: 'Ejercicio', 
+                recurso: 'Recurso adjunto' 
+            };
+
+            div.innerHTML = `
+      <div class="seccion-header">
+        <span class="seccion-mover" title="Mover arriba/abajo"><i class="bi bi-grip-vertical"></i></span>
+        <span>${iconos[sec.tipo]}</span>
+        <span class="flex-grow-1">${labels[sec.tipo]}</span>
+        <div class="ms-auto d-flex gap-2">
+          ${idx > 0 ? `<button type="button" class="btn-blk-ctrl" onclick="moverSeccion('${sec.id}',-1)" title="Mover arriba"><i class="bi bi-chevron-up"></i></button>` : `<div style="width:34px;"></div>`}
+          ${idx < secciones.length - 1 ? `<button type="button" class="btn-blk-ctrl" onclick="moverSeccion('${sec.id}',1)" title="Mover abajo"><i class="bi bi-chevron-down"></i></button>` : `<div style="width:34px;"></div>`}
+          <div style="width: 2px; background: rgba(255,255,255,0.2); margin: 2px 4px;"></div>
+          <button type="button" class="btn-blk-ctrl danger" onclick="eliminarSeccion('${sec.id}')" title="Eliminar sección"><i class="bi bi-x-lg"></i></button>
+        </div>
+      </div>
+      <div class="seccion-body">${cuerpoSeccion(sec)}</div>
+    `;
+            container.appendChild(div);
+
+            if (sec.tipo === 'teoria') {
+                const editor = div.querySelector('#editor_' + sec.id);
+                const quill = new Quill(editor, { theme: 'snow', modules: { toolbar: QUILL_TOOLBAR }, placeholder: 'Escribe el contenido teórico aquí...' });
+                if (sec._quillContent || sec.contenido) {
+                    quill.root.innerHTML = sec._quillContent || sec.contenido || '';
+                }
+                quillInstances[sec.id] = quill;
+            }
+
+            if (sec.tipo === 'video') {
+                const urlInput = div.querySelector('.yt-url-input');
+                if (urlInput) {
+                    urlInput.value = sec._url || sec.url || '';
+                    urlInput.addEventListener('input', () => actualizarPreviewYT(sec.id, urlInput.value));
+                    if (sec._url || sec.url) actualizarPreviewYT(sec.id, sec._url || sec.url);
+                }
+            }
+
+            if (sec.tipo === 'ejercicio') {
+                if (sec._pregunta || sec.pregunta) div.querySelector('.ej-pregunta').value = sec._pregunta || sec.pregunta || '';
+                if (sec._tipo_q || sec.tipo_q) div.querySelector('.ej-tipo').value = sec._tipo_q || sec.tipo_q || 'opcion_multiple';
+                if (sec._respuesta || sec.respuesta) div.querySelector('.ej-respuesta').value = sec._respuesta || sec.respuesta || '';
+                
+                const opciones = sec._opciones || sec.opciones || {};
+                if (opciones.a) div.querySelector('.ej-op-a').value = opciones.a;
+                if (opciones.b) div.querySelector('.ej-op-b').value = opciones.b;
+                if (opciones.c) div.querySelector('.ej-op-c').value = opciones.c;
+                if (opciones.d) div.querySelector('.ej-op-d').value = opciones.d;
+                
+                const tipoSel = div.querySelector('.ej-tipo');
+                if (tipoSel) { 
+                    toggleOpciones(sec.id, tipoSel.value); 
+                    tipoSel.addEventListener('change', () => toggleOpciones(sec.id, tipoSel.value)); 
+                }
+            }
+
+            if (sec.tipo === 'recurso') {
+                const tituloInput = div.querySelector('.rec-titulo');
+                const urlInput = div.querySelector('.rec-url');
+                if (tituloInput && (sec.titulo || sec._titulo)) tituloInput.value = sec.titulo || sec._titulo || '';
+                if (urlInput && (sec.url || sec._url)) urlInput.value = sec.url || sec._url || '';
+            }
+        });
+    }
+
+    function cuerpoSeccion(sec) {
+        if (sec.tipo === 'teoria') return `
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <label class="form-label text-dark fw-bolder text-uppercase mb-0" style="font-size: 0.8rem;">Contenido de Teoría</label>
+        <button type="button" class="btn btn-sm btn-dark fw-bold px-3 py-1 shadow-sm" style="border-radius:8px;" onclick="generarTeoriaIA('${sec.id}')">
+          <i class="bi bi-stars text-warning me-1"></i> Generar con IA
+        </button>
+      </div>
+      <div id="loading_teoria_${sec.id}" class="alert py-2 mb-3 rounded-3" style="display:none; background: #e0f2fe; color:#0369a1; border: 1px solid #bae6fd; font-size:0.85rem;">
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div> Redactando texto con IA...
+      </div>
+      <div id="editor_${sec.id}"></div>
+    `;
+        if (sec.tipo === 'video') return `
+      <label class="form-label text-dark fw-bolder text-uppercase" style="font-size: 0.8rem;">URL del video</label>
+      <input type="url" class="form-control-bloque yt-url-input mt-1 mb-2" placeholder="https://www.youtube.com/watch?v=...">
+      <div class="form-text text-secondary mb-3"><i class="bi bi-info-circle me-1"></i> El alumno debe ver este video para avanzar en la lección.</div>
+      <div id="preview_${sec.id}"></div>
+    `;
+        if (sec.tipo === 'ejercicio') return `
+      <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-light">
+        <div>
+            <h6 class="fw-black text-dark mb-1"><i class="bi bi-stars text-warning me-2"></i>Generador con IA</h6>
+            <span class="text-secondary fw-semibold" style="font-size: 0.85rem;">Genera un ejercicio automáticamente usando Gemini.</span>
+        </div>
+        <button type="button" class="btn text-white fw-bold px-3 py-2 shadow-sm" style="background:#1e293b; border-radius:10px; font-size: 0.9rem;" onclick="generarEjercicioIA('${sec.id}')">
+          <i class="bi bi-magic text-warning me-1"></i> Generar con IA
+        </button>
+      </div>
+      
+      <div id="loading_${sec.id}" class="alert py-3 mb-4 rounded-3 shadow-sm" style="display:none; background: #e0f2fe; color:#0369a1; border: 1px solid #bae6fd;">
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+            <span class="fw-bolder" style="font-size: 0.95rem;">Generando ejercicio con IA...</span>
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <label class="form-label text-dark fw-bolder text-uppercase" style="font-size: 0.8rem;">Enunciado de la pregunta</label>
+        <textarea class="form-control-bloque ej-pregunta" rows="3" placeholder="Escribe el enunciado del ejercicio..."></textarea>
+      </div>
+      
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label text-dark fw-bolder text-uppercase" style="font-size: 0.8rem;">Tipo de pregunta</label>
+          <select class="form-select form-control-bloque ej-tipo" onchange="toggleOpciones('${sec.id}', this.value)">
+            <option value="opcion_multiple">Opción múltiple</option>
+            <option value="verdadero_falso">Verdadero / Falso</option>
+            <option value="numerico">Respuesta numérica</option>
+            <option value="completar_texto">Completar texto</option>
+            <option value="ordenar_pasos">Ordenar pasos</option>
+            <option value="respuesta_corta">Respuesta corta</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label text-dark fw-bolder text-uppercase" style="font-size: 0.8rem;">Respuesta correcta</label>
+          <input type="text" class="form-control-bloque ej-respuesta" placeholder="Ej: a / Verdadero / 144 / palabra">
+        </div>
+      </div>
+      
+      <div id="opciones_${sec.id}" class="opciones-grid">
+        <input type="text" class="form-control-bloque ej-op-a" placeholder="Opción A">
+        <input type="text" class="form-control-bloque ej-op-b" placeholder="Opción B">
+        <input type="text" class="form-control-bloque ej-op-c" placeholder="Opción C">
+        <input type="text" class="form-control-bloque ej-op-d" placeholder="Opción D">
+      </div>
+
+      <div id="guia_completar_${sec.id}" class="form-text text-info mt-2" style="display:none;">
+        <i class="bi bi-info-circle-fill"></i> Escribe la oración usando corchetes para indicar la respuesta. Ej: "La suma de 2 y 3 es [5]."
+      </div>
+      
+      <div id="guia_ordenar_${sec.id}" class="form-text text-info mt-2" style="display:none;">
+        <i class="bi bi-info-circle-fill"></i> Escribe los pasos en su orden correcto (A, B, C y D). El sistema los mostrará mezclados y validará la secuencia correcta.
+      </div>
+      
+      <div id="pasos_${sec.id}" class="mt-4" style="display:none;">
+        <div class="card border-0 bg-success bg-opacity-10 rounded-3 shadow-sm">
+          <div class="card-body p-3">
+            <h6 class="text-success fw-bolder mb-2"><i class="bi bi-braces-asterisk me-1"></i> Solución paso a paso (generada por IA):</h6>
+            <ol id="lista_pasos_${sec.id}" class="mb-0 text-success fw-semibold" style="font-size: 0.95rem; line-height: 1.5;"></ol>
+          </div>
+        </div>
+      </div>
+    `;
+        if (sec.tipo === 'recurso') return `
+      <div class="mb-4">
+        <label class="form-label text-dark fw-bolder text-uppercase" style="font-size: 0.8rem;">Nombre del recurso</label>
+        <input type="text" class="form-control-bloque rec-titulo" placeholder="Ej: Guía de estudio" />
+      </div>
+      <div class="">
+        <label class="form-label text-dark fw-bolder text-uppercase" style="font-size: 0.8rem;">URL del recurso</label>
+        <input type="url" class="form-control-bloque rec-url" placeholder="https://..." />
+      </div>
+    `;
+        return '';
+    }
+
+    function toggleOpciones(secId, tipo) { 
+        const el = document.getElementById('opciones_' + secId); 
+        if (el) {
+            el.style.display = (tipo === 'opcion_multiple' || tipo === 'ordenar_pasos') ? 'grid' : 'none'; 
+        }
+        
+        const gCompletar = document.getElementById('guia_completar_' + secId);
+        if (gCompletar) {
+            gCompletar.style.display = tipo === 'completar_texto' ? 'block' : 'none';
+        }
+
+        const gOrdenar = document.getElementById('guia_ordenar_' + secId);
+        if (gOrdenar) {
+            gOrdenar.style.display = tipo === 'ordenar_pasos' ? 'block' : 'none';
+        }
+    }
+
+    function actualizarPreviewYT(secId, url) {
+        const preview = document.getElementById('preview_' + secId);
+        if (!preview) return; let videoId = '';
+        try { const u = new URL(url); if (u.hostname.includes('youtube.com')) videoId = u.searchParams.get('v'); else if (u.hostname.includes('youtu.be')) videoId = u.pathname.slice(1); } catch { return; }
+        if (!videoId) { preview.innerHTML = ''; return; }
+        preview.innerHTML = `<iframe class="yt-preview" src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
+    }
+
+    function recopilarDatosSecciones() {
+        return secciones.map((sec, idx) => {
+            const bloque = { tipo: sec.tipo, orden: idx + 1 };
+            if (sec.tipo === 'teoria') { const quill = quillInstances[sec.id]; bloque.contenido = quill ? quill.root.innerHTML : (sec._quillContent || sec.contenido || ''); }
+            if (sec.tipo === 'video') { const el = document.querySelector(`[data-id="${sec.id}"] .yt-url-input`); bloque.url = el ? el.value.trim() : ''; bloque.titulo = 'Video de la Lección'; }
+            if (sec.tipo === 'ejercicio') {
+                const q = s => document.querySelector(`[data-id="${sec.id}"] .ej-${s}`);
+                const tipoQ = q('tipo') ? q('tipo').value : 'opcion_multiple';
+                bloque.pregunta = q('pregunta') ? q('pregunta').value : ''; bloque.tipo_q = tipoQ; bloque.respuesta = q('respuesta') ? q('respuesta').value.trim() : '';
+                if (tipoQ === 'opcion_multiple' || tipoQ === 'ordenar_pasos') { 
+                    bloque.opciones = { 
+                        a: q('op-a') ? q('op-a').value : '', 
+                        b: q('op-b') ? q('op-b').value : '', 
+                        c: q('op-c') ? q('op-c').value : '', 
+                        d: q('op-d') ? q('op-d').value : '' 
+                    }; 
+                }
+            }
+            if (sec.tipo === 'recurso') {
+                const cont = document.querySelector(`[data-id="${sec.id}"]`);
+                const tituloInput = cont ? cont.querySelector('.rec-titulo') : null; const urlInput = cont ? cont.querySelector('.rec-url') : null;
+                bloque.titulo = tituloInput ? tituloInput.value.trim() : ''; bloque.url = urlInput ? urlInput.value.trim() : '';
+            }
+            return bloque;
+        });
+    }
+
+    function prepararEnvio() { document.getElementById('secciones_json').value = JSON.stringify(recopilarDatosSecciones()); }
+
+    async function generarTeoriaIA(secId) {
+        const tituloLeccion = document.querySelector('input[name="titulo"]').value || 'Concepto Matemático';
+        const nivel = '{{ curso.nivel }}';
+        const loading = document.getElementById('loading_teoria_' + secId);
+        
+        loading.style.display = 'block';
+        try {
+            const response = await fetch("{{ url_for('cursos.api_generar_teoria') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tema: tituloLeccion, nivel: nivel })
+            });
+            if (!response.ok) throw new Error('Error al generar teoría');
+            const data = await response.json();
+            
+            if (data.teoria && quillInstances[secId]) {
+                quillInstances[secId].root.innerHTML = data.teoria;
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    async function generarLeccionCompletaIA() {
+        const tituloLeccion = document.querySelector('input[name="titulo"]').value;
+        if (!tituloLeccion) {
+            alert('Por favor, escribe el título de la lección antes de usar la IA.');
+            return;
+        }
+
+        const subtema = prompt('Describe brevemente el subtema o enfoque específico (ej: "operaciones con signos", "fracciones complejas"):', tituloLeccion);
+        if (subtema === null) return;
+
+        const loading = document.getElementById('loadingGlobalIA');
+        loading.style.display = 'block';
+
+        try {
+            const response = await fetch("{{ url_for('cursos.api_generar_leccion_completa') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tema: subtema,
+                    nivel: '{{ curso.nivel }}'
+                })
+            });
+
+            if (!response.ok) throw new Error('Error al generar lección completa');
+            const data = await response.json();
+
+            // Limpiar lienzo actual
+            secciones = [];
+            quillInstances = {};
+            document.getElementById('secciones-container').innerHTML = '';
+
+            // Cargar secciones generadas
+            if (data.secciones && data.secciones.length > 0) {
+                data.secciones.forEach(sec => {
+                    const id = 'sec_' + (++idCounter);
+                    const newSec = { id: id, tipo: sec.tipo };
+                    
+                    if (sec.tipo === 'teoria') {
+                        newSec._quillContent = sec.contenido;
+                    } else if (sec.tipo === 'ejercicio') {
+                        newSec._pregunta = sec.pregunta;
+                        newSec._tipo_q = sec.tipo_q;
+                        newSec._respuesta = sec.respuesta;
+                        if (sec.opciones) {
+                            newSec._op_a = sec.opciones.a || '';
+                            newSec._op_b = sec.opciones.b || '';
+                            newSec._op_c = sec.opciones.c || '';
+                            newSec._op_d = sec.opciones.d || '';
+                        }
+                    } else if (sec.tipo === 'recurso') {
+                        newSec._url = sec.url;
+                    }
+                    secciones.push(newSec);
+                });
+                
+                renderSecciones();
+                document.getElementById('dropZone').style.display = 'none';
+                alert('✨ ¡Lección generada exitosamente! Revisa el contenido y guárdalo.');
+            }
+        } catch (error) {
+            alert('Error al generar lección completa: ' + error.message);
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    async function generarEjercicioIA(secId) {
+        const titulo = document.querySelector('input[name="titulo"]').value || 'Conceptos Avanzados';
+        const nivel = '{{ curso.nivel }}'; const bloque = document.querySelector(`[data-id="${secId}"]`);
+        const tipoSel = bloque.querySelector('.ej-tipo'); const tipo = tipoSel ? tipoSel.value : 'opcion_multiple';
+        const loading = document.getElementById('loading_' + secId);
+
+        if (!confirm(`¿Generar ejercicio de "${titulo}" con IA?`)) return;
+        loading.style.display = 'block';
+
+        try {
+            const response = await fetch("{{ url_for('cursos.api_generar_ejercicio') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tema: titulo, nivel, tipo }) });
+            if (!response.ok) { const errData = await response.json().catch(() => ({})); throw new Error(errData.error || 'Error al generar el ejercicio'); }
+            const data = await response.json();
+
+            const pEl = bloque.querySelector('.ej-pregunta'); const rEl = bloque.querySelector('.ej-respuesta');
+            if (pEl) pEl.value = data.enunciado || ''; if (rEl) rEl.value = data.respuesta_correcta || '';
+
+            if ((tipo === 'opcion_multiple' || tipo === 'ordenar_pasos') && data.opciones) {
+                const arr = ['a','b','c','d']; arr.forEach(l => { const el = bloque.querySelector('.ej-op-'+l); if(el) el.value = data.opciones[l] || ''; });
+            }
+
+            const sec = secciones.find(s => s.id === secId);
+            if (sec) {
+                sec._pregunta = data.enunciado || ''; sec._respuesta = data.respuesta_correcta || ''; sec._tipo_q = tipo;
+                if (data.opciones) { sec._op_a = data.opciones.a || ''; sec._op_b = data.opciones.b || ''; sec._op_c = data.opciones.c || ''; sec._op_d = data.opciones.d || ''; }
+            }
+
+            if (data.pasos && data.pasos.length > 0) {
+                const lp = document.getElementById('lista_pasos_' + secId);
+                if (lp) { lp.innerHTML = ''; data.pasos.forEach(p => { const x=document.createElement('li'); x.className='mb-1'; x.textContent=p; lp.appendChild(x); }); document.getElementById('pasos_' + secId).style.display = 'block'; if (typeof renderizarMatematicas === 'function') renderizarMatematicas(document.getElementById('pasos_' + secId)); }
+            }
+            loading.innerHTML = '<div class="d-flex align-items-center"><i class="bi bi-check-circle-fill text-success fs-4 me-2"></i> <span class="fw-bolder text-success">✅ Ejercicio generado correctamente</span></div>';
+            setTimeout(() => { loading.style.display = 'none'; }, 3500);
+        } catch (error) { alert('Error: ' + error.message); loading.style.display = 'none'; }
+    }
+
+    // Pre-cargar secciones existentes
+    const seccionesIniciales = {{ secciones_editor | tojson | safe }};
+    if (seccionesIniciales && seccionesIniciales.length > 0) {
+        seccionesIniciales.forEach(sec => {
+            agregarSeccion(sec.tipo, sec);
+        });
+    }
+
+    document.getElementById('formLeccion').addEventListener('submit', function () { prepararEnvio(); });
+</script>
+{% endblock %}

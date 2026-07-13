@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .form-card-glass {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 24px;
+        box-shadow: 0 15px 35px rgba(0, 51, 102, 0.06);
+    }
+
+    .form-control-premium {
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1.5px solid #cbd5e1;
+        transition: all 0.25s ease;
+        font-weight: 500;
+        font-size: 1rem;
+        color: #1e293b;
+        padding: 12px 16px;
+    }
+    .form-control-premium:focus {
+        background: #ffffff !important;
+        border-color: #1B396A !important;
+        box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.15) !important;
+        outline: none;
+    }
+
+    .input-group-text-premium {
+        background-color: rgba(27, 57, 106, 0.05);
+        border: 1.5px solid #cbd5e1;
+        border-right: none;
+        border-radius: 12px 0 0 12px;
+        color: #0B2545;
+        font-weight: bold;
+        padding: 12px 16px;
+    }
+    .input-group-premium .form-control-premium {
+        border-radius: 0 12px 12px 0;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="form-card-glass p-4 p-md-5 animate-slide-up" style="border-top: 6px solid #3B82F6 !important;">
+                
+                <!-- CABECERA -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-5 pb-3 border-bottom gap-3">
+                    <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center justify-content-center me-3" 
+                            style="width: 56px; height: 56px; background: rgba(59, 130, 246, 0.08); border-radius: 14px; border: 1px solid rgba(59, 130, 246, 0.15);">
+                            <i class="bi bi-file-plus fs-3 text-info"></i>
+                        </div>
+                        <div>
+                            <h2 class="fw-bold mb-1 text-dark" style="color: #0B2545; font-size: 1.6rem;">Agregar Ejercicio</h2>
+                            <p class="text-muted mb-0" style="font-size: 0.9rem;">Lección: <strong class="text-dark">{{ leccion.titulo }}</strong></p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-warning fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" onclick="generarConIA()" style="border-radius: 10px;">
+                        <i class="bi bi-lightning-fill"></i> Autogenerar con IA
+                    </button>
+                </div>
+
+                <!-- ALERTA DE CARGA IA -->
+                <div id="loadingAI" class="alert alert-info py-3 mb-4 rounded-3 shadow-sm" style="display:none; background: #e0f2fe; color:#0369a1; border: 1px solid #bae6fd;">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                        <span class="fw-bolder" style="font-size: 0.95rem;">Generando ejercicio con IA...</span>
+                    </div>
+                </div>
+
+                <form method="POST" id="formEjercicio" class="needs-validation" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <!-- Enunciado -->
+                    <div class="mb-4">
+                        <label for="enunciado" class="form-label fw-bold text-dark">Enunciado / Pregunta <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-premium" id="enunciado" name="enunciado" rows="4" required
+                            placeholder="Ej: Resuelve la siguiente ecuación: \( x^2 - 4 = 0 \) y encuentra el valor de x."></textarea>
+                    </div>
+
+                    <!-- Tipo y Dificultad -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="tipo" class="form-label fw-bold text-dark">Tipo de Pregunta</label>
+                            <select class="form-select form-control-premium" id="tipo" name="tipo" onchange="cambiarTipo()">
+                                <option value="opcion_multiple">Opción Múltiple</option>
+                                <option value="verdadero_falso">Verdadero / Falso</option>
+                                <option value="numerico">Respuesta Numérica / Texto Corto</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="dificultad" class="form-label fw-bold text-dark">Dificultad (1-5)</label>
+                            <input type="number" class="form-control form-control-premium" id="dificultad" name="dificultad" min="1" max="5" value="1">
+                        </div>
+                    </div>
+
+                    <!-- Sección Opción Múltiple -->
+                    <div id="seccion_opciones" class="mb-4 p-4" style="background: rgba(255,255,255,0.4); border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);">
+                        <label class="form-label fw-bold text-dark mb-3"><i class="bi bi-list-check me-2 text-primary-brand"></i> Opciones de Respuesta</label>
+                        
+                        <div class="input-group input-group-premium mb-3">
+                            <span class="input-group-text-premium">A</span>
+                            <input type="text" class="form-control form-control-premium" name="opcion_a" placeholder="Opción A">
+                        </div>
+                        <div class="input-group input-group-premium mb-3">
+                            <span class="input-group-text-premium">B</span>
+                            <input type="text" class="form-control form-control-premium" name="opcion_b" placeholder="Opción B">
+                        </div>
+                        <div class="input-group input-group-premium mb-3">
+                            <span class="input-group-text-premium">C</span>
+                            <input type="text" class="form-control form-control-premium" name="opcion_c" placeholder="Opción C">
+                        </div>
+                        <div class="input-group input-group-premium mb-2">
+                            <span class="input-group-text-premium">D</span>
+                            <input type="text" class="form-control form-control-premium" name="opcion_d" placeholder="Opción D">
+                        </div>
+                        <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Indica la letra correcta (a, b, c, o d) en el campo de "Respuesta Correcta".</div>
+                    </div>
+
+                    <!-- Respuesta Correcta -->
+                    <div class="mb-5">
+                        <label for="respuesta_correcta" class="form-label fw-bold text-dark">Respuesta Correcta <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-premium" id="respuesta_correcta" name="respuesta_correcta"
+                            required placeholder="Ej: a, Verdadero, 5, etc.">
+                    </div>
+
+                    <!-- Pasos de Solución (Generados por IA) -->
+                    <div id="seccion_pasos" class="mb-4" style="display:none;">
+                        <div class="card border-0 bg-success bg-opacity-10 rounded-3 shadow-sm">
+                            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3 pb-0">
+                                <strong class="text-success"><i class="bi bi-list-ol me-2"></i> Pasos de Solución (IA)</strong>
+                                <button type="button" class="btn btn-sm btn-outline-secondary border-0" onclick="togglePasos()">
+                                    <i class="bi bi-eye-slash" id="iconTogglePasos"></i>
+                                </button>
+                            </div>
+                            <div class="card-body px-3 pb-3" id="contenido_pasos">
+                                <ol id="lista_pasos" class="mb-0 text-success fw-semibold" style="font-size:0.9rem; line-height:1.6;"></ol>
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">
+                            <i class="bi bi-info-circle me-1"></i> Estos pasos se mostrarán al estudiante cuando falle o complete el ejercicio.
+                        </div>
+                    </div>
+
+                    <!-- Explicación (Generada por IA) -->
+                    <div id="seccion_explicacion" class="mb-5" style="display:none;">
+                        <div class="card border-0 bg-info bg-opacity-10 rounded-3 shadow-sm">
+                            <div class="card-body p-3">
+                                <strong class="text-info d-block mb-2"><i class="bi bi-lightbulb me-2"></i> Explicación de la IA</strong>
+                                <p id="texto_explicacion" class="mb-0 text-info fw-semibold" style="font-size:0.9rem; line-height:1.6;"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL DE BOTONES -->
+                    <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+                        <a href="{{ url_for('cursos.ver_leccion', id=leccion.id) }}" class="btn btn-outline-secondary px-4 py-2 border-0" style="color: #64748b; font-weight: 600;">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary text-white fw-bold px-5 py-2 shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, #3B82F6, #1D4ED8);">
+                            <i class="bi bi-check2-circle me-2"></i> Guardar Ejercicio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cambiarTipo() {
+        const tipo = document.getElementById('tipo').value;
+        const seccionOpciones = document.getElementById('seccion_opciones');
+        const respuestaInput = document.getElementById('respuesta_correcta');
+
+        if (tipo === 'opcion_multiple') {
+            seccionOpciones.style.display = 'block';
+            respuestaInput.placeholder = 'Ingresa la letra correcta (a, b, c, d)';
+        } else if (tipo === 'verdadero_falso') {
+            seccionOpciones.style.display = 'none';
+            respuestaInput.placeholder = 'Escribe "Verdadero" o "Falso"';
+        } else {
+            seccionOpciones.style.display = 'none';
+            respuestaInput.placeholder = 'Escribe la respuesta exacta';
+        }
+    }
+
+    function togglePasos() {
+        const contenido = document.getElementById('contenido_pasos');
+        const icono = document.getElementById('iconTogglePasos');
+        if (contenido.style.display === 'none') {
+            contenido.style.display = 'block';
+            icono.className = 'bi bi-eye-slash';
+        } else {
+            contenido.style.display = 'none';
+            icono.className = 'bi bi-eye';
+        }
+    }
+
+    async function generarConIA() {
+        const tema = "{{ leccion.titulo }}";
+        const nivel = "{{ leccion.curso.nivel }}";
+        const tipo = document.getElementById('tipo').value;
+        const loading = document.getElementById('loadingAI');
+
+        if (!confirm(`¿Quieres que la IA genere un ejercicio de ${tipo} sobre "${tema}"?`)) return;
+
+        loading.style.display = 'block';
+
+        try {
+            const response = await fetch("{{ url_for('cursos.api_generar_ejercicio') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ tema, nivel, tipo })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'Error en la API');
+            }
+
+            const data = await response.json();
+
+            // Rellenar formulario
+            document.getElementById('enunciado').value = data.enunciado;
+            document.getElementById('respuesta_correcta').value = data.respuesta_correcta;
+            document.getElementById('dificultad').value = Math.floor(Math.random() * 3) + 2;
+
+            if (tipo === 'opcion_multiple' && data.opciones) {
+                document.getElementsByName('opcion_a')[0].value = data.opciones.a || '';
+                document.getElementsByName('opcion_b')[0].value = data.opciones.b || '';
+                document.getElementsByName('opcion_c')[0].value = data.opciones.c || '';
+                document.getElementsByName('opcion_d')[0].value = data.opciones.d || '';
+            }
+
+            // Mostrar pasos de solución
+            if (data.pasos && data.pasos.length > 0) {
+                const listaPasos = document.getElementById('lista_pasos');
+                listaPasos.innerHTML = '';
+                data.pasos.forEach(paso => {
+                    const li = document.createElement('li');
+                    li.className = 'mb-2';
+                    li.textContent = paso;
+                    listaPasos.appendChild(li);
+                });
+                document.getElementById('seccion_pasos').style.display = 'block';
+                if (typeof renderizarMatematicas === 'function') renderizarMatematicas(document.getElementById('seccion_pasos'));
+            }
+
+            // Mostrar explicación
+            if (data.explicacion) {
+                document.getElementById('texto_explicacion').textContent = data.explicacion;
+                document.getElementById('seccion_explicacion').style.display = 'block';
+                if (typeof renderizarMatematicas === 'function') renderizarMatematicas(document.getElementById('seccion_explicacion'));
+            }
+
+            // Alerta de éxito
+            loading.innerHTML = '<div class="d-flex align-items-center"><i class="bi bi-check-circle-fill text-success fs-4 me-2"></i> <span class="fw-bolder text-success">¡Ejercicio generado exitosamente con Gemini 2.5 Flash!</span></div>';
+            setTimeout(() => { loading.style.display = 'none'; }, 3000);
+
+        } catch (error) {
+            alert('Hubo un error al generar el ejercicio: ' + error.message);
+            console.error(error);
+            loading.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

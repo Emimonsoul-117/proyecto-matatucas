@@ -1,0 +1,55 @@
+:root {
+    /* Brand Colors - TecNM & ITST */
+    --primary-color: #003366;       /* Azul Institucional TecNM */
+    --primary-hover: #001f3f;       /* Azul oscuro hover */
+    --secondary-color: #6F7271;     /* Gris Plata ITST/Gov */
+    --accent-color: #D9B35C;        /* Dorado Institucional */
+    --accent-hover: #c49d47;        /* Dorado oscuro hover */
+
+    /* Gamification Colors */
+    --success-color: #10B981;       /* Emerald 500 - Correct/Growth */
+    --warning-color: #F59E0B;       /* Amber 500 - Stars/Streaks */
+    --danger-color: #9D2449;        /* Guinda institucional como error/peligro elegante */
+    --info-color: #3B82F6;          /* Blue 500 - Info */
+
+    /* Neutral Colors / Slate Scale */
+    --bg-body: #F8FAFC;             /* Slate 50 - Main Background */
+    --bg-card: #FFFFFF;             /* White - Card Background */
+    --text-main: #1E293B;           /* Slate 800 - Primary Text */
+    --text-muted: #64748B;          /* Slate 500 - Secondary Text */
+    --border-color: #E2E8F0;        /* Slate 200 - Borders */
+
+    /* Typography */
+    --font-heading: 'Nunito', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    /* Spacing & Layout */
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    
+    /* Elegant Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 51, 102, 0.08); /* Sombra con toques azules */
+    --shadow-lg: 0 10px 25px rgba(0, 51, 102, 0.12);
+    
+    /* Animation Timings */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    --transition-slow: 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+    /* Sidebar & Navbar */
+    --sidebar-width: 280px;
+    --navbar-height: 70px;
+}
+
+/* Dark Mode Support (Future proofing) */
+@media (prefers-color-scheme: dark) {
+    /* :root {
+        --bg-body: #0F172A;
+        --bg-card: #1E293B;
+        --text-main: #F1F5F9;
+        --text-muted: #94A3B8;
+        --border-color: #334155;
+    } */
+}

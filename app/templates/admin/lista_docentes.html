@@ -1,0 +1,88 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+        <h1 class="h2"><i class="bi bi-graph-up"></i> Métricas de Desempeño Docente</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark text-uppercase small">
+                        <tr>
+                            <th class="px-4 py-3">Nombre / Especialidad</th>
+                            <th class="py-3">Cursos</th>
+                            <th class="py-3">Estudiantes Totales</th>
+                            <th class="py-3">Progreso Promedio</th>
+                            <th class="px-4 py-3 text-end">Reporte Oficial</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for docente in docentes %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="fw-bold fs-5">{{ docente.nombre }}</div>
+                                <div class="text-muted small">{{ docente.especialidad }}</div>
+                            </td>
+                            <td class="py-3">
+                                <span class="badge bg-secondary rounded-pill">{{ docente.num_cursos }}</span>
+                            </td>
+                            <td class="py-3">
+                                <i class="bi bi-people-fill text-muted me-1"></i> {{ docente.total_estudiantes }}
+                            </td>
+                            <td class="py-3">
+                                <div class="progress" style="height: 10px; width: 120px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ docente.avg_progreso }}%" 
+                                         aria-valuenow="{{ docente.avg_progreso }}" 
+                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <span class="small text-muted">{{ docente.avg_progreso }}%</span>
+                            </td>
+                            <td class="px-4 py-3 text-end">
+                                <a href="{{ url_for('admin.descargar_reporte_docente', id=docente.id) }}" class="btn btn-sm btn-outline-primary shadow-sm hover-elevate">
+                                    <i class="bi bi-file-earmark-pdf"></i> Generar Reporte PDF
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">No se encontraron docentes registrados.</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 p-4 bg-light rounded-3 border">
+        <div class="row align-items-center">
+            <div class="col-md-1 text-center">
+                <i class="bi bi-info-circle display-6 text-primary"></i>
+            </div>
+            <div class="col-md-11">
+                <h5 class="mb-1">Acerca de las Métricas</h5>
+                <p class="text-muted small mb-0">
+                    Estas métricas son calculadas en tiempo real analizando la relación entre el número de lecciones completadas por los alumnos inscritos y el total de lecciones de cada curso. 
+                    El reporte PDF incluye un desglose detallado por curso que puede ser utilizado para evaluaciones académicas formales.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-elevate { transition: transform 0.2s ease-in-out; }
+    .hover-elevate:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}

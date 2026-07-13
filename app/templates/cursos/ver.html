@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Desactivar transform de fade-in para que position: fixed funcione relativo al viewport */
+    .animate-fade-in {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    /* RESET PARA QUE OCUPE TODO EL ALTO BAJO EL NAVBAR */
+    .master-detail-container {
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 56px);
+        margin-top: -1.5rem;
+    }
+
+    @media (min-width: 992px) {
+        .master-detail-container {
+            flex-direction: row;
+        }
+    }
+
+    /* SIDEBAR (MASTER) - ÍNDICE DE LECCIONES */
+    .sidebar-master {
+        width: 100%;
+        background: #0B2545;
+        color: #f8fafc;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    @media (min-width: 992px) {
+        .sidebar-master {
+            width: 320px;
+            flex-shrink: 0;
+            position: fixed;
+            top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+            z-index: 10;
+        }
+    }
+
+    /* Cabecera del Sidebar */
+    .sidebar-header {
+        padding: 1.5rem 1.5rem;
+        background: rgba(0, 0, 0, 0.25);
+        border-bottom: 3px solid #FF7A00;
+    }
+
+    .sidebar-header .curso-titulo-sidebar {
+        font-size: 1rem;
+        font-weight: 900;
+        color: #FFFFFF;
+        line-height: 1.35;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .nivel-pill {
+        display: inline-block;
+        font-size: 0.68rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+        letter-spacing: 0.7px;
+    }
+
+    .lesson-nav-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .lesson-nav-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .lesson-link {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        color: #CBD5E1;
+        text-decoration: none;
+        transition: all 0.18s ease;
+        position: relative;
+    }
+
+    .lesson-link:hover {
+        background: rgba(255, 255, 255, 0.07);
+        color: #FFFFFF;
+        padding-left: 1.8rem;
+    }
+
+    /* Lección ACTIVA — borde naranja */
+    .lesson-link.activa {
+        background: rgba(255, 122, 0, 0.15);
+        border-left: 4px solid #FF7A00;
+        color: #FFFFFF;
+    }
+
+    .lesson-num-badge {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        color: #E2E8F0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 0.88rem;
+        margin-right: 14px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .lesson-link.completada .lesson-num-badge {
+        background: #10B981;
+        border-color: #6EE7B7;
+        color: white;
+    }
+
+    /* Textos para sidebar oscuro */
+    .sidebar-text-success {
+        color: #6EE7B7 !important;
+    }
+
+    .sidebar-text-warning {
+        color: #FFB347 !important;
+    }
+
+    /* PANEL DERECHO (DETAIL) */
+    .content-detail {
+        flex-grow: 1;
+        background: #e2e8f0;
+        padding: 2rem 1.5rem;
+    }
+
+    @media (min-width: 992px) {
+        .content-detail {
+            padding: 1.5rem 3rem 3rem 3rem;
+            margin-left: 320px;
+        }
+    }
+
+    /* Lienzo de Documento Central (Máxima Visibilidad) */
+    .document-canvas {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+        max-width: 1100px;
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid #cbd5e1;
+    }
+
+    /* Vista General "Portada del Curso" en Detail */
+    .course-overview-header {
+        background: #FFFFFF;
+        padding: 2rem 1.5rem;
+        border-bottom: 2px solid #E2E8F0;
+        position: relative;
+    }
+
+    /* Barra naranja sutil en la parte superior del canvas */
+    .course-overview-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #0B2545, #FF7A00, #10B981);
+    }
+
+    @media (min-width: 768px) {
+        .course-overview-header {
+            padding: 3rem 3.5rem;
+        }
+    }
+
+    /* Título del curso en el panel derecho */
+    .course-overview-header h2 {
+        color: #0B2545;
+        font-weight: 900;
+        font-size: 2rem;
+        letter-spacing: -0.5px;
+    }
+
+    .action-btn-solido {
+        background: #1B396A;
+        color: white;
+        font-weight: 800;
+        padding: 12px 24px;
+        border-radius: 10px;
+        border: 2px solid #0B2545;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .action-btn-solido:hover {
+        background: #FF7A00 !important;
+        border-color: #FF7A00 !important;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(255, 122, 0, 0.2);
+    }
+
+    .action-btn-outlined {
+        background: #ffffff;
+        color: #1B396A;
+        font-weight: 800;
+        padding: 12px 24px;
+        border-radius: 10px;
+        border: 2px solid #cbd5e1;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .action-btn-outlined:hover {
+        background: #f8fafc;
+        border-color: #1B396A;
+    }
+
+    /* Tarjetas de Ficha Técnica */
+    .ficha-card {
+        background: #FFFFFF;
+        border-radius: 14px;
+        padding: 1.5rem;
+        border: 1px solid #E2E8F0;
+        height: 100%;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+
+    .ficha-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .ficha-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #0B2545, #FF7A00);
+    }
+
+    .ficha-label {
+        font-size: 0.7rem;
+        font-weight: 900;
+        color: #94A3B8;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .ficha-value {
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: #0F172A;
+        line-height: 1.2;
+    }
+
+    /* Scrollbar bonito para Sidebar */
+    .sidebar-master::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .sidebar-master::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.15);
+    }
+
+    .sidebar-master::-webkit-scrollbar-thumb {
+        background: #FF7A00;
+        border-radius: 10px;
+    }
+</style>
+
+{% set nivel_color = '#10B981' if curso.nivel == 'basico' else '#FF7A00' if curso.nivel == 'intermedio' else '#3B82F6' %}
+
+<div class="master-detail-container">
+
+    <!-- MASTER: SIDEBAR IZQUIERDO -->
+    <aside class="sidebar-master">
+
+        <div class="sidebar-header">
+            <span class="nivel-pill"
+                style="background: rgba(255,255,255,0.1); border: 1px solid {{ nivel_color }}; color: {{ nivel_color }};">
+                <i class="bi bi-diagram-3-fill me-1"></i> Nivel {{ curso.nivel | capitalize }}
+            </span>
+            <div class="curso-titulo-sidebar">{{ curso.titulo }}</div>
+            {% if current_user.rol == 'estudiante' or modo_preview %}
+            <div class="d-flex align-items-center mt-3">
+                <div class="progress flex-grow-1 bg-dark me-2" style="height: 6px; border-radius: 4px;">
+                    {% set pct_show = 0 %}
+                    {% if inscripcion and not inscripcion.bloqueado %}
+                        {% set raw_pr = inscripcion.progreso %}
+                        {% set pct_show = (raw_pr if raw_pr <= 100 else 100) | round(0, 'common' ) | int %}
+                    {% endif %}
+                    <div class="progress-bar bg-success" style="width: {{ pct_show }}%;"></div>
+                </div>
+                <small class="text-white-50 fw-bold" style="font-size: 0.75rem;">{{ pct_show }}%</small>
+            </div>
+            {% endif %}
+        </div>
+
+        <ul class="lesson-nav-list">
+            <!-- Portada (Vista Actual) -->
+            <li class="lesson-nav-item" style="background: rgba(255,255,255,0.1); border-left: 4px solid #FF7A00;">
+                <a href="{{ url_for('cursos.ver_curso', id=curso.id) if not modo_preview else url_for('cursos.vista_alumno', id=curso.id) }}" class="lesson-link text-white fw-bold">
+                    <div class="lesson-num-badge" style="background: transparent; border-color: transparent;">
+                        <i class="bi bi-house-door-fill text-warning fs-5"></i>
+                    </div>
+                    Inicio del Curso
+                </a>
+            </li>
+
+            <!-- Lecciones Dinámicas -->
+            {% for leccion in curso.lecciones | sort(attribute='orden') %}
+            {% set esta_completada = leccion.id in lecciones_completadas_ids %}
+            <li class="lesson-nav-item d-flex align-items-center leccion-wrapper" data-id="{{ leccion.id }}">
+                {% if (current_user.id == curso.id_docente or current_user.rol == 'administrador') and not modo_preview %}
+                <div class="drag-handle ps-3" title="Arrastra para reordenar"
+                    style="cursor: grab; color: rgba(255,255,255,0.4); font-size: 1.1rem;">
+                    <i class="bi bi-grip-vertical"></i>
+                </div>
+                {% endif %}
+                <a href="{{ url_for('cursos.ver_leccion', id=leccion.id) }}"
+                    class="lesson-link flex-grow-1 {{ 'completada' if esta_completada and (current_user.rol == 'estudiante' or modo_preview) else '' }}">
+                    <div class="lesson-num-badge">
+                        {% if esta_completada and (current_user.rol == 'estudiante' or modo_preview) %}
+                        <i class="bi bi-check-lg"></i>
+                        {% else %}
+                        <span class="leccion-orden-num">{{ leccion.orden }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="pe-2">
+                        <span class="d-block fw-semibold" style="line-height: 1.35; font-size: 1.05rem; color: #fff;">{{ leccion.titulo }}</span>
+                        {% if esta_completada and (current_user.rol == 'estudiante' or modo_preview) %}
+                        <span class="d-block sidebar-text-success fw-bolder"
+                            style="font-size: 0.75rem; margin-top: 5px; letter-spacing: 0.5px;">
+                            <i class="bi bi-check2-circle me-1"></i> COMPLETADA
+                        </span>
+                        {% endif %}
+
+                        <!-- Chips de contenido -->
+                        {% set secs = leccion.secciones or [] %}
+                        {% if secs %}
+                        <div class="leccion-tipos mt-1 d-flex gap-1 flex-wrap">
+                            {% if secs | selectattr('tipo', 'equalto', 'teoria') | list | length > 0 %}
+                            <span class="badge bg-light text-dark px-2 py-1" style="font-size:0.65rem;">Teoría</span>
+                            {% endif %}
+                            {% if secs | selectattr('tipo', 'equalto', 'video') | list | length > 0 %}
+                            <span class="badge bg-danger text-white px-2 py-1" style="font-size:0.65rem;">Video</span>
+                            {% endif %}
+                            {% if secs | selectattr('tipo', 'equalto', 'ejercicio') | list | length > 0 %}
+                            <span class="badge bg-success text-white px-2 py-1" style="font-size:0.65rem;">Ejercicio</span>
+                            {% endif %}
+                        </div>
+                        {% elif leccion.contenido_teoria %}
+                        <div class="leccion-tipos mt-1">
+                            <span class="badge bg-light text-dark px-2 py-1" style="font-size:0.65rem;">Teoría</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+
+                {% if (current_user.id == curso.id_docente or current_user.rol == 'administrador') and not modo_preview %}
+                <!-- Botones de gestión de lección en el sidebar -->
+                <div class="pe-3 d-flex gap-1">
+                    <a href="{{ url_for('cursos.editar_leccion', id_curso=curso.id, id_leccion=leccion.id) }}"
+                        class="btn btn-sm btn-outline-light border-0" title="Editar lección"
+                        style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form action="{{ url_for('cursos.eliminar_leccion', id_curso=curso.id, id_leccion=leccion.id) }}"
+                        method="POST" class="d-inline m-0 p-0"
+                        onsubmit="return confirm('¿Estás seguro de eliminar esta lección? Se perderá el progreso de los alumnos en ella.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Eliminar lección"
+                            style="height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </li>
+            {% else %}
+            <li class="p-4 text-center text-white-50 mt-4">
+                <i class="bi bi-journal-x fs-2 mb-2 d-block"></i>
+                <small class="fw-bold">No hay contenido publicado</small>
+            </li>
+            {% endfor %}
+        </ul>
+    </aside>
+
+    <!-- DETAIL: CONTENIDO DERECHO -->
+    <main class="content-detail">
+        <!-- Banner superior en modo preview alumno -->
+        {% if modo_preview %}
+        <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex justify-content-between align-items-center" style="border-left: 4px solid #f59e0b !important; border-radius: 12px;">
+            <div>
+                <i class="bi bi-eye-fill me-2 fs-5"></i>
+                <strong>Modo Vista Previa:</strong> Estás visualizando este curso exactamente como lo vería un alumno.
+            </div>
+            <a href="{{ url_for('cursos.ver_curso', id=curso.id) }}" class="btn btn-warning btn-sm fw-bold rounded-3">
+                Volver a Vista Docente
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="document-canvas">
+
+            <!-- BANNER RESUMEN PRINCIPAL -->
+            <div class="course-overview-header">
+                <div class="d-flex align-items-center mb-4 pb-2 border-bottom border-light">
+                    <div class="bg-primary text-white d-flex align-items-center justify-content-center me-4 shadow-sm"
+                        style="width: 60px; height: 60px; border-radius: 14px; background: #0B2545 !important;">
+                        <i class="bi bi-journal-bookmark-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bolder mb-1" style="color: #0B2545; font-size: 2.2rem;">Información del Curso</h2>
+                        <span class="badge bg-light text-secondary border fw-bold px-3 py-2">Vista general</span>
+                    </div>
+                </div>
+
+                <p class="fs-5 mb-5 fw-medium" style="color: #475569; line-height: 1.8;">{{ curso.descripcion }}</p>
+
+                <!-- ACCIONES RÁPIDAS -->
+                <div class="d-flex gap-3 flex-wrap">
+                    {% if current_user.rol == 'estudiante' or modo_preview %}
+
+                        {% if inscripcion %}
+                            {% if inscripcion.bloqueado %}
+                            <div class="alert alert-danger mb-0 fw-bold w-100"
+                                style="border-radius: 10px; border: 2px solid #fca5a5;">
+                                <i class="bi bi-lock-fill me-2"></i> Estás bloqueado temporalmente de este curso.
+                            </div>
+                            {% else %}
+                                {% set prim_leccion = (curso.lecciones | sort(attribute='orden')) | first %}
+                                {% if prim_leccion %}
+                                <a href="{{ url_for('cursos.ver_leccion', id=prim_leccion.id) }}" class="action-btn-solido shadow-sm">
+                                    <i class="bi bi-play-circle-fill me-2"></i> Continuar Aprendiendo
+                                </a>
+                                {% endif %}
+
+                                {% if pct_show >= 100 %}
+                                <a href="{{ url_for('cursos.descargar_certificado', id=curso.id) }}" class="action-btn-outlined"
+                                    style="border-color: #10B981; color: #10B981;">
+                                    <i class="bi bi-award-fill me-2"></i> Descargar Certificado
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        {% else %}
+                            <form action="{{ url_for('cursos.inscribir_curso', id=curso.id) }}" method="POST"
+                                class="w-100 w-sm-auto">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                <button type="submit" class="action-btn-solido w-100 shadow-sm"
+                                    style="background: #10B981; border-color: #047857;">
+                                    <i class="bi bi-plus-circle-fill me-2"></i> Inscribirme al curso
+                                </button>
+                            </form>
+                        {% endif %}
+
+                    {% endif %}
+
+                    <!-- COMANDOS DE DOCENTE -->
+                    {% if (current_user.id == curso.id_docente or current_user.rol == 'administrador') and not modo_preview %}
+
+                        <a href="{{ url_for('cursos.vista_alumno', id=curso.id) }}" class="action-btn-outlined bg-light">
+                            <i class="bi bi-eye-fill me-2"></i> Vista Alumno
+                        </a>
+
+                        {% if curso.estado == 'borrador' %}
+                        <form action="{{ url_for('cursos.publicar_curso', id=curso.id) }}" method="POST"
+                            class="d-inline m-0 p-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="action-btn-solido shadow-sm"
+                                style="background: #EAB308; border-color: #CA8A04; color: #000; border: none;">
+                                <i class="bi bi-rocket-takeoff-fill me-2"></i> Publicar Curso
+                            </button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('cursos.despublicar_curso', id=curso.id) }}" method="POST"
+                            class="d-inline m-0 p-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="action-btn-outlined shadow-sm text-warning"
+                                style="border-color: #EAB308;">
+                                <i class="bi bi-pause-circle-fill me-2"></i> Despublicar
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <a href="{{ url_for('cursos.nueva_leccion', id_curso=curso.id) }}" class="action-btn-solido shadow-sm"
+                            style="background: #1B396A; border-color: #0B2545;">
+                            <i class="bi bi-node-plus-fill me-2"></i> Nueva Lección
+                        </a>
+                        <a href="{{ url_for('cursos.ver_alumnos_curso', id_curso=curso.id) }}" class="action-btn-outlined">
+                            <i class="bi bi-people-fill me-2"></i> Alumnos
+                        </a>
+                        <a href="{{ url_for('cursos.curso_analytics', id_curso=curso.id) }}" class="action-btn-outlined">
+                            <i class="bi bi-graph-up me-2"></i> Analíticas
+                        </a>
+                        <a href="{{ url_for('cursos.editar_curso', id=curso.id) }}" class="action-btn-outlined">
+                            <i class="bi bi-gear-fill me-2"></i> Configurar
+                        </a>
+
+                        <form action="{{ url_for('cursos.duplicar_curso', id=curso.id) }}" method="POST"
+                            class="d-inline m-0 p-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="action-btn-outlined">
+                                <i class="bi bi-copy me-2"></i> Duplicar
+                            </button>
+                        </form>
+
+                        <form action="{{ url_for('cursos.eliminar_curso', id=curso.id) }}" method="POST"
+                            class="d-inline m-0 p-0"
+                            onsubmit="return confirm('¿Estás seguro de que deseas eliminar este curso? Esta acción no se puede deshacer.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                            <button type="submit" class="action-btn-outlined text-danger" style="border-color: #fca5a5;">
+                                <i class="bi bi-trash-fill me-2"></i> Eliminar
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ESTADÍSTICAS Y FICHA TÉCNICA EN GRID HORIZONTAL -->
+            <div class="bg-light p-4 p-md-5 border-top border-2 border-light">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <div
+                        style="width:36px;height:36px;border-radius:8px;background:rgba(255,122,0,0.12);display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-clipboard-data-fill" style="color:#FF7A00;"></i>
+                    </div>
+                    <h4 style="color:#0B2545; font-size:1.25rem; font-weight:900; margin:0; letter-spacing:-0.3px;">Detalles del Curso</h4>
+                </div>
+
+                <div class="row g-4">
+                    {% if curso.codigo_curso %}
+                    <div class="col-md-6 col-lg-3">
+                        <div class="ficha-card border-0 shadow-sm"
+                            style="background: #ffffff; border-radius: 16px; padding: 1.5rem;">
+                            <span class="ficha-label text-secondary fw-bold text-uppercase d-block mb-2"
+                                style="font-size: 0.8rem; letter-spacing: 0.5px;"><i class="bi bi-upc-scan me-1"></i> Código Único</span>
+                            <div class="ficha-value user-select-all fs-4 fw-bolder text-dark">{{ curso.codigo_curso }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="col-md-6 col-lg-3">
+                        <div class="ficha-card border-0 shadow-sm"
+                            style="background: #ffffff; border-radius: 16px; padding: 1.5rem;">
+                            <span class="ficha-label text-secondary fw-bold text-uppercase d-block mb-2"
+                                style="font-size: 0.8rem; letter-spacing: 0.5px;"><i class="bi bi-offset me-1"></i> Nivel</span>
+                            <div class="ficha-value fs-5 fw-bolder text-dark d-flex align-items-center">
+                                <span class="d-inline-block me-2 shadow-sm"
+                                    style="width: 14px; height: 14px; border-radius: 50%; background: {{ nivel_color }};"></span>
+                                {{ curso.nivel | capitalize }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-3">
+                        <div class="ficha-card border-0 shadow-sm"
+                            style="background: #ffffff; border-radius: 16px; padding: 1.5rem;">
+                            <span class="ficha-label text-secondary fw-bold text-uppercase d-block mb-2"
+                                style="font-size: 0.8rem; letter-spacing: 0.5px;"><i class="bi bi-journal-text me-1"></i> Lecciones</span>
+                            <div class="ficha-value fs-4 fw-bolder text-dark">{{ curso.lecciones | length }} lecciones</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-3">
+                        <div class="ficha-card border-0 shadow-sm"
+                            style="background: #ffffff; border-radius: 16px; padding: 1.5rem;">
+                            <span class="ficha-label text-secondary fw-bold text-uppercase d-block mb-2"
+                                style="font-size: 0.8rem; letter-spacing: 0.5px;"><i class="bi bi-people-fill me-1"></i> Alumnos inscritos</span>
+                            <div class="ficha-value fs-4 fw-bolder text-dark">{{ curso.inscripciones | length }} alumnos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Toast para notificaciones de reorden -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+    <div id="reorder-toast" class="toast align-items-center text-bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle me-1"></i> Orden de lecciones actualizado correctamente.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+    <div id="reorder-error-toast" class="toast align-items-center text-bg-danger border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-exclamation-triangle me-1"></i> Error al reordenar lecciones.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if (current_user.id == curso.id_docente or current_user.rol == 'administrador') and not modo_preview %}
+<style>
+    .sortable-ghost {
+        opacity: 0.4;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 2px dashed #FDE047 !important;
+    }
+
+    .sortable-chosen {
+        box-shadow: 0 8px 25px rgba(253, 224, 71, 0.2);
+    }
+
+    .drag-handle:hover {
+        color: #FDE047 !important;
+    }
+
+    .leccion-wrapper {
+        transition: transform 0.15s ease;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.querySelector('.lesson-nav-list');
+        if (!container || container.children.length === 0) return;
+
+        const csrfToken = '{{ csrf_token() }}';
+        const reorderUrl = '{{ url_for("cursos.reordenar_lecciones", id_curso=curso.id) }}';
+
+        new Sortable(container, {
+            animation: 200,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+            onEnd: function (evt) {
+                const items = container.querySelectorAll('.leccion-wrapper');
+                const orden = [];
+                items.forEach(function (el, i) {
+                    const numEl = el.querySelector('.leccion-orden-num');
+                    if (numEl) numEl.textContent = i + 1;
+                    orden.push({
+                        id: parseInt(el.dataset.id),
+                        orden: i + 1
+                    });
+                });
+
+                fetch(reorderUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ orden: orden })
+                })
+                .then(function (resp) {
+                    if (resp.ok) {
+                        const toastEl = document.getElementById('reorder-toast');
+                        if (toastEl) {
+                            const toast = new bootstrap.Toast(toastEl);
+                            toast.show();
+                        }
+                    } else {
+                        throw new Error('Error del servidor');
+                    }
+                })
+                .catch(function (err) {
+                    const toastEl = document.getElementById('reorder-error-toast');
+                    if (toastEl) {
+                        const toast = new bootstrap.Toast(toastEl);
+                        toast.show();
+                    }
+                    setTimeout(function () { location.reload(); }, 2000);
+                });
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
