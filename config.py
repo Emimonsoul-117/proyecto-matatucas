@@ -21,7 +21,7 @@ class ConfiguracionDesarrollo(Configuracion):
     DEBUG = True
     # Configuración de conexión a MySQL con XAMPP (usuario root, sin contraseña por defecto)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql+mysqlconnector://root:@localhost/Matatucas-db'
+        'mysql+pymysql://root:@localhost/Matatucas-db'
 
 class ConfiguracionProduccion(Configuracion):
     """Configuración para el entorno de producción."""
