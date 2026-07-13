@@ -11,19 +11,29 @@ MAX_REINTENTOS = 3
 
 class ServicioIA:
     def __init__(self):
-        self.modelo = genai.GenerativeModel('gemini-2.5-flash')
+        pass
 
     def _llamar_modelo(self, prompt):
         ultimo_error = None
-        for intento in range(1, MAX_REINTENTOS + 1):
-            try:
-                respuesta = self.modelo.generate_content(prompt)
-                return respuesta.text
-            except Exception as exc:
-                ultimo_error = exc
-                print(f'Intento {intento}/{MAX_REINTENTOS} fallido: {exc}')
-                if intento < MAX_REINTENTOS:
-                    time.sleep(1.5 * intento)
+        modelos_a_probar = ['gemini-2.5-flash', 'gemini-1.5-flash']
+        
+        for modelo_nombre in modelos_a_probar:
+            modelo = genai.GenerativeModel(modelo_nombre)
+            for intento in range(1, MAX_REINTENTOS + 1):
+                try:
+                    respuesta = modelo.generate_content(prompt)
+                    return respuesta.text
+                except Exception as exc:
+                    ultimo_error = exc
+                    print(f'Intento {intento}/{MAX_REINTENTOS} con {modelo_nombre} fallido: {exc}')
+                    # Si el error es sobre modelo no encontrado o no autorizado, cambiamos de modelo de inmediato
+                    exc_str = str(exc).lower()
+                    if 'not found' in exc_str or '404' in exc_str or 'invalid' in exc_str or 'model' in exc_str:
+                        break
+                    if intento < MAX_REINTENTOS:
+                        time.sleep(1.5 * intento)
+            print(f'Todos los intentos con {modelo_nombre} fallaron. Probando siguiente modelo de respaldo...')
+            
         raise ultimo_error
 
     def _parsear_json(self, texto):
@@ -32,6 +42,7 @@ class ServicioIA:
         return json.loads(texto)
 
     def _limpiar_json(self, texto):
+        texto = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', texto)
         return texto
 
     def _extraer_json(self, texto):
