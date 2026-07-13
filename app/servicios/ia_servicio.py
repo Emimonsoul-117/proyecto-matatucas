@@ -32,7 +32,6 @@ class ServicioIA:
         return json.loads(texto)
 
     def _limpiar_json(self, texto):
-        texto = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', texto)
         return texto
 
     def _extraer_json(self, texto):

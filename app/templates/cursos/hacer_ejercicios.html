@@ -337,7 +337,10 @@
         try {
             const response = await fetch("{{ url_for('cursos.api_explicar_ejercicio') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
                 body: JSON.stringify({ enunciado: enunciado, respuesta_correcta: respuestaCorrecta, respuesta_usuario: respuestaUsuario })
             });
 

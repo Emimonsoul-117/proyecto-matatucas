@@ -579,7 +579,10 @@
         try {
             const response = await fetch("{{ url_for('cursos.api_generar_teoria') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
                 body: JSON.stringify({ tema: tituloLeccion, nivel: nivel })
             });
             if (!response.ok) throw new Error('Error al generar teoría');
@@ -611,7 +614,10 @@
         try {
             const response = await fetch("{{ url_for('cursos.api_generar_leccion_completa') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
                 body: JSON.stringify({
                     tema: subtema,
                     nivel: '{{ curso.nivel }}'
@@ -671,7 +677,14 @@
         loading.style.display = 'block';
 
         try {
-            const response = await fetch("{{ url_for('cursos.api_generar_ejercicio') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tema: titulo, nivel, tipo }) });
+            const response = await fetch("{{ url_for('cursos.api_generar_ejercicio') }}", { 
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }, 
+                body: JSON.stringify({ tema: titulo, nivel, tipo }) 
+            });
             if (!response.ok) { const errData = await response.json().catch(() => ({})); throw new Error(errData.error || 'Error al generar el ejercicio'); }
             const data = await response.json();
 

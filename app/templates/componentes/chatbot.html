@@ -68,7 +68,10 @@
         try {
             const response = await fetch("{{ url_for('cursos.api_chat_educativo') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
                 body: JSON.stringify({
                     mensaje: msg,
                     contexto: "{{ leccion.titulo }} - {{ leccion.curso.titulo }}"
