@@ -19,19 +19,7 @@
                 <!-- Cargado por JS -->
             </p>
 
-            {% if current_user.rol == 'estudiante' and estudiante %}
-            <div class="mb-4 col-md-10 col-lg-8">
-                <div class="d-flex justify-content-between align-items-end mb-1">
-                    <span class="fw-bold text-dark" style="font-size: 0.85rem;"><i class="bi bi-star-fill text-warning me-1"></i>Progreso de Experiencia</span>
-                    <small class="text-muted fw-bold" style="font-size: 0.8rem;">{{ estudiante.puntos_totales or 0 }} / {{ (estudiante.puntos_totales or 0) + puntos_next }} XP</small>
-                </div>
-                <div class="progress" style="height: 10px; border-radius: 10px; background: rgba(0,0,0,0.05); box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                    {% set porcentaje_xp = (((1000 - puntos_next) / 1000) * 100) | int %}
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success rounded-pill"
-                        role="progressbar" style="width: {{ porcentaje_xp }}%"></div>
-                </div>
-            </div>
-            {% endif %}
+
 
             <div class="d-flex flex-wrap gap-3">
                 {% if current_user.rol == 'docente' or current_user.rol == 'administrador' %}
@@ -67,42 +55,23 @@
                         <small class="text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">CURSOS</small>
                     </div>
 
+                    {% if current_user.rol == 'estudiante' %}
                     <div style="width: 1px; height: 35px; background: rgba(0,0,0,0.08);"></div>
 
-                    <!-- ESTUDIANTE METRICAS COMPLETA -->
-                    {% if current_user.rol == 'estudiante' and estudiante %}
-                    <div>
-                        <div class="d-flex align-items-center justify-content-center mx-auto mb-1"
-                            style="width: 36px; height: 36px; background: rgba(245,158,11,0.08); border-radius: 10px;">
-                            <i class="bi bi-coin fs-5" style="color: #F59E0B;"></i>
-                        </div>
-                        <h5 class="fw-bold mb-0 text-dark">{{ estudiante.monedas or 0 }}</h5>
-                        <small class="text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">COINS</small>
-                    </div>
-
-                    <div style="width: 1px; height: 35px; background: rgba(0,0,0,0.08);"></div>
-
-                    <div>
-                        <div class="d-flex align-items-center justify-content-center mx-auto mb-1"
-                            style="width: 36px; height: 36px; background: rgba(16,185,129,0.08); border-radius: 10px;">
-                            <i class="bi bi-star-fill fs-5" style="color: #10B981;"></i>
-                        </div>
-                        <h5 class="fw-bold mb-0 text-dark">{{ nivel }}</h5>
-                        <small class="text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">NIVEL</small>
-                    </div>
-
-                    <div style="width: 1px; height: 35px; background: rgba(0,0,0,0.08);"></div>
-
+                    <!-- DATO 2: RACHA (EN EL MEDIO) -->
                     <div>
                         <div class="d-flex align-items-center justify-content-center mx-auto mb-1"
                             style="width: 36px; height: 36px; background: rgba(239,68,68,0.08); border-radius: 10px;">
                             <i class="bi bi-fire fs-5" style="color: #EF4444;"></i>
                         </div>
-                        <h5 class="fw-bold mb-0 text-dark">{{ estudiante.racha_dias or 0 }}</h5>
+                        <h5 class="fw-bold mb-0 text-dark">{{ (estudiante.racha_dias if estudiante else 0) or 0 }}</h5>
                         <small class="text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">RACHA</small>
                     </div>
+                    {% endif %}
 
-                    {% else %}
+                    <div style="width: 1px; height: 35px; background: rgba(0,0,0,0.08);"></div>
+
+                    <!-- DATO 3 -->
                     <div>
                         <div class="d-flex align-items-center justify-content-center mx-auto mb-1"
                             style="width: 36px; height: 36px; background: rgba(22,163,74,0.08); border-radius: 10px;">
@@ -111,7 +80,6 @@
                         <h5 class="fw-bold mb-0 text-dark text-uppercase mt-1" style="font-size: 0.95rem;">{{ current_user.rol[:5] }}</h5>
                         <small class="text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">ROL</small>
                     </div>
-                    {% endif %}
 
                 </div>
             </div>
@@ -306,6 +274,7 @@
                         </a>
                     </div>
                 </div>
+                {#
                 <div class="col-md-6">
                     <div class="card border-0 p-4 shadow-sm" style="background: #FFFFFF !important; border-radius: 20px; border: 1px solid rgba(0,0,0,0.08) !important;">
                         <h6 class="fw-bold mb-3" style="color: #0F172A !important;"><i class="bi bi-trophy text-danger"></i>Mira el Ranking</h6>
@@ -315,6 +284,7 @@
                         </a>
                     </div>
                 </div>
+                #}
             </div>
             {% else %}
             <!-- Ningún curso en la plataforma -->

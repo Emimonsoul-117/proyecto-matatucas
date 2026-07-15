@@ -206,23 +206,72 @@
     }
 
     .mascot-container {
-        background: #ffffff;
+        position: relative;
+        background: rgba(255, 255, 255, 0.92);
         border-radius: 50%;
         padding: 2.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
         width: clamp(280px, 35vw, 360px);
         height: clamp(280px, 35vw, 360px);
         margin: 20px auto;
-        border: 4px solid rgba(255, 255, 255, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.08),
+            inset 0 -5px 10px rgba(0, 0, 0, 0.02),
+            0 0 0 10px rgba(255, 255, 255, 0.15);
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Halo de luz suave y tranquilo detrás */
+    .mascot-container::before {
+        content: '';
+        position: absolute;
+        top: -15px;
+        left: -15px;
+        right: -15px;
+        bottom: -15px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: pulseGlow 8s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .mascot-container:hover {
+        transform: scale(1.03) translateY(-3px);
+        background: #ffffff;
+        border-color: rgba(255, 255, 255, 0.85);
+        box-shadow:
+            0 30px 60px rgba(0, 0, 0, 0.12),
+            0 0 25px rgba(255, 255, 255, 0.25);
     }
 
     .mascot {
         max-height: 100%;
         max-width: 100%;
         object-fit: contain;
+        animation: float 7s ease-in-out infinite;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .mascot-container:hover .mascot {
+        transform: scale(1.02);
+    }
+
+    @keyframes pulseGlow {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 0.5;
+        }
+
+        50% {
+            transform: scale(1.05);
+            opacity: 0.85;
+        }
     }
 
     @keyframes float {
@@ -233,7 +282,7 @@
         }
 
         50% {
-            transform: translateY(-20px);
+            transform: translateY(-8px);
         }
     }
 
@@ -289,13 +338,15 @@
         <div class="header-unificado">
             <h2 class="inst-name">Instituto Tecnológico<br>Superior de Teziutlán</h2>
             <div class="logo-container">
-                <img src="{{ url_for('static', filename='img/c1.jpeg') }}" style="max-height: 90%; border-radius: 4px;" alt="Logo ITST">
-                <img src="{{ url_for('static', filename='img/c2.png') }}" style="max-height: 90%; border-radius: 4px;" alt="Logo Mapache">
+                <img src="{{ url_for('static', filename='img/c1.jpeg') }}" style="max-height: 90%; border-radius: 4px;"
+                    alt="Logo ITST">
+                <img src="{{ url_for('static', filename='img/c2.png') }}" style="max-height: 90%; border-radius: 4px;"
+                    alt="Logo Mapache">
             </div>
         </div>
 
         <div class="hero-content animate__animated animate__fadeInLeft">
-            <h1 class="main-title">MATATUCAS</h1>
+            <h1 class="main-title">INTELLI TEC</h1>
             <p class="sub-title">IA Aplicada a las Matemáticas</p>
 
             <div class="objetivo-box">

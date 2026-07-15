@@ -264,6 +264,168 @@
             }
 
         }
+
+        /* ===== MASCOTA FOCOS SVGS (FOCOS DE IDEAS EN NAVBAR) ===== */
+        .bulb-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 14px;
+            /* Separación con la palabra Matatucas a la izquierda */
+            vertical-align: middle;
+        }
+
+        .bulb-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bulb-svg {
+            width: 28px;
+            /* Focos más grandecitos para que luzcan mejor */
+            height: 28px;
+            stroke-width: 2.2;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            filter: drop-shadow(0 2px 10px rgba(255, 179, 71, 0.5));
+        }
+
+        /* Capa de brillo de fondo para alta visibilidad */
+        .bulb-svg path.bulb-glow {
+            fill: #FFCA28;
+            opacity: 0.15;
+            stroke: none;
+        }
+
+        /* Cuerpo del foco con color vivo por defecto */
+        .bulb-svg path.bulb-glass {
+            fill: rgba(255, 193, 7, 0.85);
+            /* Amarillo cálido semi-sólido muy visible */
+            stroke: #FFA000;
+            transition: all 0.4s ease;
+        }
+
+        .bulb-svg path.bulb-filament {
+            stroke: #FFFFFF;
+            stroke-width: 1.8;
+            filter: drop-shadow(0 0 2px #FFF);
+            transition: all 0.4s ease;
+        }
+
+        .bulb-svg line.bulb-base {
+            stroke: #90A4AE;
+            stroke-width: 2.5;
+            transition: all 0.4s ease;
+        }
+
+        .bulb-svg-1 {
+            transform: scale(0.95);
+            /* Recto, sin rotación */
+            animation: bulbPulseCalm 3.5s ease-in-out infinite;
+        }
+
+        .bulb-svg-2 {
+            transform: scale(0.95);
+            /* Recto, sin rotación */
+            animation: bulbPulseCalm 3.5s ease-in-out infinite;
+            animation-delay: 1.75s;
+        }
+
+        /* Interacción Hover */
+        .navbar-brand:hover .bulb-svg-1 {
+            transform: scale(1.1);
+            /* Recto, ampliado */
+        }
+
+        .navbar-brand:hover .bulb-svg-2 {
+            transform: scale(1.1);
+            /* Recto, ampliado */
+        }
+
+        .navbar-brand:hover .bulb-svg path.bulb-glass {
+            fill: #FFD54F;
+            /* Amarillo súper brillante */
+            stroke: #FF6F00;
+            /* Naranja encendido */
+            filter: drop-shadow(0 0 12px rgba(255, 193, 7, 0.9));
+        }
+
+        .navbar-brand:hover .bulb-svg path.bulb-glow {
+            opacity: 0.4;
+        }
+
+        .navbar-brand:hover .bulb-svg path.bulb-filament {
+            stroke: #FFFFFF;
+            stroke-width: 2.2;
+            filter: drop-shadow(0 0 5px #FFF);
+        }
+
+        .navbar-brand:hover .bulb-svg line.bulb-base {
+            stroke: #CFD8DC;
+        }
+
+        @keyframes bulbPulseCalm {
+
+            0%,
+            100% {
+                opacity: 0.95;
+                filter: drop-shadow(0 0 4px rgba(255, 179, 71, 0.4));
+            }
+
+            50% {
+                opacity: 1;
+                filter: drop-shadow(0 0 12px rgba(255, 179, 71, 0.8));
+            }
+        }
+
+
+
+        /* ===== NOTIFICACIONES TOAST PREMIUM ===== */
+        .toast-container-floating {
+            position: fixed;
+            top: 0;
+            right: 0;
+            padding: 1.5rem;
+            margin-top: 4.5rem;
+            z-index: 9999;
+            max-width: 420px;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .toast-container-floating .toast {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(11, 37, 69, 0.12), 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .toast-container-floating .toast:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(11, 37, 69, 0.16), 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .toast-container-floating .toast.animate-slide-in {
+            animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px) scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
     </style>
     <!-- Dark Mode Styles -->
     <style>
@@ -273,69 +435,111 @@
             --text-main: #F1F5F9;
             --text-muted: #94A3B8;
             --border-color: #334155;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
-            --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
         }
+
         html[data-theme="oscuro"] body {
             background-color: var(--bg-body);
             color: var(--text-main);
         }
+
         html[data-theme="oscuro"] .navbar-glass {
             background: rgba(15, 23, 42, 0.9);
             border-bottom: 1px solid rgba(51, 65, 85, 0.5);
         }
+
         html[data-theme="oscuro"] .navbar-brand,
         html[data-theme="oscuro"] .nav-link {
             color: #F1F5F9 !important;
         }
+
         html[data-theme="oscuro"] .card {
             background-color: var(--bg-card);
             border-color: var(--border-color);
         }
+
         html[data-theme="oscuro"] .card:hover {
             border-color: rgba(59, 130, 246, 0.3);
         }
+
         html[data-theme="oscuro"] .card-header {
             border-bottom-color: var(--border-color);
         }
+
         html[data-theme="oscuro"] .card-header.bg-white {
             background-color: var(--bg-card) !important;
         }
+
         html[data-theme="oscuro"] .dropdown-menu {
             background-color: #1E293B;
             border-color: var(--border-color);
         }
+
         html[data-theme="oscuro"] .dropdown-item {
             color: var(--text-main);
         }
+
         html[data-theme="oscuro"] .dropdown-item:hover {
             background-color: #334155;
         }
+
         html[data-theme="oscuro"] .form-control,
         html[data-theme="oscuro"] .form-select {
             background-color: #0F172A;
             border-color: #475569;
             color: #F1F5F9;
         }
+
         html[data-theme="oscuro"] .text-muted {
             color: #94A3B8 !important;
         }
+
         html[data-theme="oscuro"] .alert {
             background-color: #1E293B;
             border-color: var(--border-color);
             color: var(--text-main);
         }
+
         html[data-theme="oscuro"] footer {
             color: #64748B !important;
         }
+
         html[data-theme="oscuro"] .progress {
             background-color: #334155;
         }
+
+        html[data-theme="oscuro"] .toast-container-floating .toast {
+            background: rgba(30, 41, 59, 0.85) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        html[data-theme="oscuro"] .toast-container-floating .toast-header {
+            color: #F1F5F9 !important;
+        }
+
+        html[data-theme="oscuro"] .toast-container-floating .toast-body {
+            color: #CBD5E1 !important;
+        }
+
+        html[data-theme="oscuro"] .toast-container-floating .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
         /* Font size support */
-        html[data-fontsize="pequeno"] body { font-size: 14px; }
-        html[data-fontsize="normal"] body { font-size: 16px; }
-        html[data-fontsize="grande"] body { font-size: 18px; }
+        html[data-fontsize="pequeno"] body {
+            font-size: 14px;
+        }
+
+        html[data-fontsize="normal"] body {
+            font-size: 16px;
+        }
+
+        html[data-fontsize="grande"] body {
+            font-size: 18px;
+        }
     </style>
 </head>
 
@@ -343,9 +547,47 @@
     <nav class="navbar navbar-expand-lg navbar-light fixed-top navbar-glass">
         <div class="container-fluid px-4">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
-                <img src="{{ url_for('static', filename='img/c1.jpeg') }}" alt="Logo ITST" style="height: 38px; border-radius: 6px; background: white; padding: 2px;">
-                <img src="{{ url_for('static', filename='img/c2.png') }}" alt="Logo Mapache" style="height: 38px; border-radius: 6px; background: white; padding: 2px;">
-                <span class="fw-bold text-white ms-1">Matatucas</span>
+                <img src="{{ url_for('static', filename='img/c3.png') }}" alt="Logo Carrera"
+                    style="height: 38px; border-radius: 6px; background: #ffffff !important; padding: 2px;">
+                <img src="{{ url_for('static', filename='img/c1.jpeg') }}" alt="Logo ITST"
+                    style="height: 38px; border-radius: 6px; background: white; padding: 2px;">
+                <img src="{{ url_for('static', filename='img/c2.png') }}" alt="Logo Mapache"
+                    style="height: 38px; border-radius: 6px; background: white; padding: 2px;">
+                <span class="fw-bold text-white ms-1 d-flex align-items-center">
+                    INTELLI TEC
+                    <span class="bulb-container">
+                        <!-- Primer foco (Izquierdo) -->
+                        <span class="bulb-wrapper bulb-wrapper-1">
+                            <svg class="bulb-svg bulb-svg-1" viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path class="bulb-glow"
+                                    d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5">
+                                </path>
+                                <path class="bulb-glass"
+                                    d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5">
+                                </path>
+                                <line class="bulb-base" x1="9" y1="18" x2="15" y2="18"></line>
+                                <line class="bulb-base" x1="10" y1="22" x2="14" y2="22"></line>
+                                <path class="bulb-filament" d="M12 14v-3m-1.5-2a1.5 1.5 0 0 1 3 0"></path>
+                            </svg>
+                        </span>
+                        <!-- Segundo foco (Derecho) -->
+                        <span class="bulb-wrapper bulb-wrapper-2">
+                            <svg class="bulb-svg bulb-svg-2" viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path class="bulb-glow"
+                                    d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5">
+                                </path>
+                                <path class="bulb-glass"
+                                    d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5">
+                                </path>
+                                <line class="bulb-base" x1="9" y1="18" x2="15" y2="18"></line>
+                                <line class="bulb-base" x1="10" y1="22" x2="14" y2="22"></line>
+                                <path class="bulb-filament" d="M12 14v-3m-1.5-2a1.5 1.5 0 0 1 3 0"></path>
+                            </svg>
+                        </span>
+                    </span>
+                </span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -359,26 +601,42 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('cursos.lista_cursos') }}">Cursos</a>
                     </li>
+                    {#
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('main.ranking') }}">
                             <i class="bi bi-trophy me-1"></i>Ranking
                         </a>
                     </li>
+                    #}
                     {% if current_user.rol == 'administrador' %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="dropdownAdmin" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="dropdownAdmin"
+                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-shield-lock-fill"></i> Panel Operativo
                         </a>
                         <ul class="dropdown-menu shadow" aria-labelledby="dropdownAdmin">
-                            <li><h6 class="dropdown-header text-uppercase small">Métricas y Operación</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-grid-1x2-fill me-2 text-muted"></i> Resumen Operativo</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.metricas') }}"><i class="bi bi-bar-chart-fill me-2 text-muted"></i> Análisis Integrales</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.gamificacion') }}"><i class="bi bi-controller me-2 text-muted"></i> Gamificación e IA</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header text-uppercase small">Personas y Seguridad</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_usuarios') }}"><i class="bi bi-people-fill me-2 text-muted"></i> Control de Usuarios</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_docentes') }}"><i class="bi bi-person-vcard-fill me-2 text-muted"></i> Rendimiento Docente</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_auditoria') }}"><i class="bi bi-shield-lock-fill me-2 text-muted"></i> Log de Auditoría</a></li>
+                            <li>
+                                <h6 class="dropdown-header text-uppercase small">Métricas y Operación</h6>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i
+                                        class="bi bi-grid-1x2-fill me-2 text-muted"></i> Resumen Operativo</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.metricas') }}"><i
+                                        class="bi bi-bar-chart-fill me-2 text-muted"></i> Análisis Integrales</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.gamificacion') }}"><i
+                                        class="bi bi-controller me-2 text-muted"></i> Gamificación e IA</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <h6 class="dropdown-header text-uppercase small">Personas y Seguridad</h6>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_usuarios') }}"><i
+                                        class="bi bi-people-fill me-2 text-muted"></i> Control de Usuarios</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_docentes') }}"><i
+                                        class="bi bi-person-vcard-fill me-2 text-muted"></i> Rendimiento Docente</a>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.lista_auditoria') }}"><i
+                                        class="bi bi-shield-lock-fill me-2 text-muted"></i> Log de Auditoría</a></li>
                         </ul>
                     </li>
                     {% endif %}
@@ -390,9 +648,11 @@
                         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
                             <li><a class="dropdown-item" href="{{ url_for('main.perfil') }}">Mi Perfil</a></li>
                             {% if current_user.rol == 'estudiante' %}
-                            <li><a class="dropdown-item" href="{{ url_for('main.tienda') }}"><i class="bi bi-shop me-1"></i>Tienda</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.tienda') }}"><i
+                                        class="bi bi-shop me-1"></i>Tienda</a></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('main.configuracion') }}"><i class="bi bi-gear me-1"></i>Configuración</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.configuracion') }}"><i
+                                        class="bi bi-gear me-1"></i>Configuración</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -402,8 +662,8 @@
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link btn text-white px-3"
-                            href="{{ url_for('auth.login_page') }}">Iniciar Sesión</a>
+                        <a class="nav-link btn text-white px-3" href="{{ url_for('auth.login_page') }}">Iniciar
+                            Sesión</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -411,35 +671,58 @@
         </div>
     </nav>
 
-    <!-- ALERTAS GLOBALES Y ADVERTENCIAS (con contenedor fluido) -->
-    <div class="container-fluid px-4 px-lg-5 mt-3">
+    <!-- Contenedor de notificaciones flotantes (Toasts) -->
+    <div class="toast-container-floating">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category == 'peligro' else 'success' if category == 'exito' else 'warning' if category == 'advertencia' else category }} alert-dismissible fade show shadow-sm"
-            role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        {% set border_color = '#ef4444' if category == 'peligro' else '#10b981' if category == 'exito' else '#f59e0b' if
+        category == 'advertencia' else '#3b82f6' %}
+        {% set icon_class = 'bi-exclamation-octagon-fill' if category == 'peligro' else 'bi-check-circle-fill' if
+        category == 'exito' else 'bi-exclamation-triangle-fill' if category == 'advertencia' else 'bi-info-circle-fill'
+        %}
+        <div class="toast show animate-slide-in" role="alert" aria-live="assertive" aria-atomic="true"
+            style="border-left: 5px solid {{ border_color }} !important; margin-bottom: 1rem;">
+            <div
+                class="toast-header border-0 bg-transparent text-dark pt-3 pb-1 px-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi {{ icon_class }} me-2 fs-5" style="color: {{ border_color }};"></i>
+                    <strong class="me-auto text-uppercase"
+                        style="font-size: 0.75rem; letter-spacing: 0.5px; color: #475569;">
+                        {{ 'Error' if category == 'peligro' else 'Éxito' if category == 'exito' else 'Advertencia' if
+                        category == 'advertencia' else 'Notificación' }}
+                    </strong>
+                </div>
+                <button type="button" class="btn-close text-dark" data-bs-dismiss="toast" aria-label="Close"
+                    style="font-size: 0.75rem;"></button>
+            </div>
+            <div class="toast-body text-dark pt-1 pb-3 px-3 fw-medium" style="font-size: 0.9rem; line-height: 1.4;">
+                {{ message }}
+            </div>
         </div>
         {% endfor %}
         {% endif %}
         {% endwith %}
-
-        <!-- Alerta global: info académica faltante -->
-        {% if falta_info_academica %}
-        <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm" role="alert"
-            style="border-left: 4px solid #f59e0b !important;">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
-                <span>
-                    <strong>¡Completa tu perfil!</strong> Aún no has registrado tu carrera, semestre y grupo.
-                    <a href="{{ url_for('main.configuracion') }}#info-academica" class="alert-link">Ir a Configuración</a>
-                </span>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endif %}
     </div>
+
+    <!-- Alerta global: info académica faltante (Flotante en la esquina inferior izquierda) -->
+    {% if falta_info_academica %}
+    <div class="position-fixed bottom-0 start-0 p-3" style="z-index: 1080; max-width: 450px; width: 100%;">
+        <div class="alert alert-warning alert-dismissible fade show border-0 shadow-lg mb-0" role="alert"
+            style="border-left: 4px solid #f59e0b !important; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #000;">
+            <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                <div>
+                    <strong>¡Completa tu perfil!</strong> Aún no has registrado tu carrera, semestre y grupo.
+                    <br>
+                    <a href="{{ url_for('main.configuracion') }}#info-academica"
+                        class="alert-link text-decoration-underline fw-bold">Ir a Configuración</a>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- CONTENIDO LIBERADO SIN CONTENEDOR RESTRICTIVO (CADA VISTA DICTA SU TAMAÑO) -->
     <div class="animate-fade-in" style="min-height: 80vh;">
@@ -447,7 +730,7 @@
     </div>
 
     <footer class="text-center py-4 text-muted">
-        <small>&copy; 2026 MathAI. Plataforma Educativa con IA.</small>
+        <small>&copy; 2026 Ingeniería Informática. Plataforma Educativa con IA.</small>
     </footer>
 
     <!-- Bootstrap 5 JS -->
@@ -456,12 +739,26 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js"></script>
     <script>
         // Apply saved theme/font preferences
-        (function() {
+        (function () {
             const tema = '{{ config_usuario.tema if config_usuario else "claro" }}';
             const fuente = '{{ config_usuario.tamano_fuente if config_usuario else "normal" }}';
             document.documentElement.setAttribute('data-theme', tema);
             document.documentElement.setAttribute('data-fontsize', fuente);
         })();
+
+        // Auto-desvanecimiento de notificaciones flotantes (Toasts)
+        document.addEventListener('DOMContentLoaded', function () {
+            // Toasts auto-dismiss
+            const toasts = document.querySelectorAll('.toast-container-floating .toast');
+            toasts.forEach(toastEl => {
+                setTimeout(() => {
+                    const bsToast = bootstrap.Toast.getOrCreateInstance(toastEl);
+                    if (bsToast) {
+                        bsToast.hide();
+                    }
+                }, 5000);
+            });
+        });
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>

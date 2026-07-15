@@ -18,8 +18,17 @@ def dashboard():
         return redirect(url_for('docente.dashboard'))
     
     cursos_usuario = []
+    estudiante = None
+    nivel_actual = 1
+    puntos_next = 0
     
     if current_user.rol == 'estudiante':
+        estudiante = Estudiante.query.get(current_user.id)
+        if estudiante:
+            puntos_totales = estudiante.puntos_totales or 0
+            nivel_actual = (puntos_totales // 1000) + 1
+            puntos_next = 1000 - (puntos_totales % 1000)
+            
         # Obtener cursos inscritos alineando progreso con lecciones completadas
         inscripciones = Inscripcion.query.filter_by(id_estudiante=current_user.id).all()
         cursos_usuario = []
@@ -36,7 +45,12 @@ def dashboard():
         if necesita_commit:
             bd.session.commit()
     
-    return render_template('dashboard.html', nombre=current_user.nombre, cursos=cursos_usuario)
+    return render_template('dashboard.html', 
+                           nombre=current_user.nombre, 
+                           cursos=cursos_usuario,
+                           estudiante=estudiante,
+                           nivel=nivel_actual,
+                           puntos_next=puntos_next)
 
 @main.route('/perfil')
 @login_required
